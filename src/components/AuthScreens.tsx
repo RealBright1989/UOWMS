@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trash2, ShieldAlert, ArrowRight, Sparkles, Building2, UserCheck, ShieldClose } from 'lucide-react';
+import { Trash2, ArrowRight, Sparkles } from 'lucide-react';
 import { UserRole } from '../types';
 import UnicrossLogo from './UnicrossLogo';
 

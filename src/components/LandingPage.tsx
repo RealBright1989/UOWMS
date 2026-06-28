@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ArrowRight, Menu, X, CheckCircle, Star, ChevronDown, ChevronLeft, ChevronRight, Users, Trash2, BarChart3, Recycle, Smartphone, Monitor, MapPin, Mail, Phone, Quote, Clock, Target, Leaf, Eye, Truck, Wifi, Award, Layers } from 'lucide-react';
+import { ArrowRight, Menu, X, CheckCircle, Star, ChevronDown, ChevronLeft, ChevronRight, Users, Trash2, BarChart3, Recycle, Monitor, MapPin, Mail, Phone, Quote, Truck, Award, Layers } from 'lucide-react';
 import UnicrossLogo from './UnicrossLogo';
 import MapSection from './MapSection';
 

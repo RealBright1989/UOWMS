@@ -18,7 +18,13 @@ import ReportDetails from './components/ReportDetails';
 import SettingsScreen from './components/SettingsScreen';
 
 // Extra helper icon imports for internal views
-import { Bell, History, Search, Filter, FileText, Download, CheckCircle, Clock } from 'lucide-react';
+import { Bell, History, Search, FileText, Download } from 'lucide-react';
+
+const MOCK_EMAILS = {
+  student: 'brightokon444@gmail.com',
+  staff: 'emeka.obi@unicross.edu.ng',
+  admin: 'florence.effiong@unicross.edu.ng'
+};
 
 export default function App() {
   
@@ -158,12 +164,7 @@ export default function App() {
       setCurrentUser(matchingUser);
     } else {
       // Direct email fallback trigger
-      const mockEmails = {
-        student: 'brightokon444@gmail.com',
-        staff: 'emeka.obi@unicross.edu.ng',
-        admin: 'florence.effiong@unicross.edu.ng'
-      };
-      handleLogin(mockEmails[role], role);
+      handleLogin(MOCK_EMAILS[role], role);
     }
     setActiveTab('dashboard');
     setSelectedReport(null);
@@ -392,12 +393,7 @@ export default function App() {
           onNavigateToLogin={() => { setViewState('auth'); setAuthMode('login'); }}
           onNavigateToRegister={() => { setViewState('auth'); setAuthMode('register'); }}
           onQuickLogin={(role) => {
-            const presets = {
-              student: 'brightokon444@gmail.com',
-              staff: 'emeka.obi@unicross.edu.ng',
-              admin: 'florence.effiong@unicross.edu.ng'
-            };
-            handleLogin(presets[role], role);
+            handleLogin(MOCK_EMAILS[role], role);
           }}
         />
       )}
@@ -455,16 +451,6 @@ export default function App() {
 
               {/* PORTAL TAB: STAFF OPERATIONS DASHBOARD */}
               {activeTab === 'dashboard' && currentUser.role === 'staff' && (
-                <StaffDashboard
-                  reports={reports}
-                  currentUser={currentUser}
-                  onUpdateStatus={handleUpdateStatus}
-                  onSelectReport={setSelectedReport}
-                />
-              )}
-
-              {/* PORTAL TAB: STAFF TASK LIST CLONE */}
-              {activeTab === 'staff-tasks' && (
                 <StaffDashboard
                   reports={reports}
                   currentUser={currentUser}
@@ -733,34 +719,6 @@ export default function App() {
                   </div>
 
                 </div>
-              )}
-
-              {/* PORTAL TAB: USER ACCOUNTS DIRECTORY (Admins only) */}
-              {activeTab === 'admin-users' && (
-                <AdminDashboard
-                  reports={reports}
-                  users={users}
-                  activityLogs={activityLogs}
-                  onSelectReport={setSelectedReport}
-                  onUpdateUserStatus={handleUpdateUserStatus}
-                  onUpdateUserRole={handleUpdateUserRole}
-                  onDeleteUser={handleDeleteUser}
-                  onNavigateTab={setActiveTab}
-                />
-              )}
-
-              {/* PORTAL TAB: ADVANCED EXECUTIVE ANALYTICS (Admins only) */}
-              {activeTab === 'admin-analytics' && (
-                <AdminDashboard
-                  reports={reports}
-                  users={users}
-                  activityLogs={activityLogs}
-                  onSelectReport={setSelectedReport}
-                  onUpdateUserStatus={handleUpdateUserStatus}
-                  onUpdateUserRole={handleUpdateUserRole}
-                  onDeleteUser={handleDeleteUser}
-                  onNavigateTab={setActiveTab}
-                />
               )}
 
               {/* PORTAL TAB: CONFIGURATION / SETTINGS */}

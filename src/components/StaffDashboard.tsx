@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
-  ClipboardList, CheckCircle, Activity, Award, MapPin, 
-  Trash2, ArrowRight, Clock, Star, TrendingUp, Check 
+  ClipboardList, CheckCircle, Award, MapPin, 
+  Clock, Check 
 } from 'lucide-react';
 import { WasteReport, User } from '../types';
 

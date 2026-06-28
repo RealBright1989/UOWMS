@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
-  Trash2, Bell, User as UserIcon, Settings, LogOut, Menu, X, BarChart3, 
-  Plus, ClipboardList, History, Sparkles, BrainCircuit, Users, ShieldAlert 
+  Bell, Settings, LogOut, Menu, X, BarChart3, 
+  Plus, ClipboardList, History 
 } from 'lucide-react';
 import { UserRole, User } from '../types';
 import UnicrossLogo from './UnicrossLogo';
@@ -34,11 +34,9 @@ export default function DashboardLayout({
       { id: 'dashboard', label: 'Ecosystem Dashboard', icon: BarChart3, roles: ['student', 'staff', 'admin'] },
       { id: 'report-waste', label: 'Report Waste', icon: Plus, roles: ['student', 'admin'] },
       { id: 'my-reports', label: 'My Submissions', icon: ClipboardList, roles: ['student'] },
-      { id: 'staff-tasks', label: 'Assigned Tasks', icon: ClipboardList, roles: ['staff'] },
       { id: 'history', label: 'History & Archives', icon: History, roles: ['student', 'staff', 'admin'] },
       { id: 'notifications', label: 'Notifications', icon: Bell, badge: unreadNotificationsCount > 0 ? unreadNotificationsCount : undefined, roles: ['student', 'staff', 'admin'] },
-      { id: 'admin-users', label: 'User Directory', icon: Users, roles: ['admin'] },
-      { id: 'admin-analytics', label: 'Advanced Analytics', icon: ShieldAlert, roles: ['admin'] },
+
       { id: 'settings', label: 'Configuration', icon: Settings, roles: ['student', 'staff', 'admin'] },
     ];
     return items.filter(item => item.roles.includes(currentUser.role));

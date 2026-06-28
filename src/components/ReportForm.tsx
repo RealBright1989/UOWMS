@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
-  Upload, BrainCircuit, AlertTriangle, Sparkles, MapPin, 
-  Trash2, ArrowRight, Loader2, RefreshCw, HelpCircle, CheckCircle2 
+  Upload, BrainCircuit, Sparkles, MapPin, 
+  ArrowRight, Loader2 
 } from 'lucide-react';
 import { WasteCategory, ReportPriority } from '../types';
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
-  Plus, AlertTriangle, CheckCircle, Clock, Trash2, 
-  ArrowRight, Sparkles, MapPin, Calendar, HelpCircle 
+  Plus, CheckCircle, Clock, Trash2, 
+  ArrowRight, Sparkles, MapPin, Calendar 
 } from 'lucide-react';
 import { WasteReport, User } from '../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';

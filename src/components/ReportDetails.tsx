@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  ArrowLeft, Clock, MapPin, User, Tag, AlertTriangle, 
+  ArrowLeft, Clock, MapPin, User, AlertTriangle, 
   Send, MessageSquare, CheckCircle, ShieldAlert, Sparkles 
 } from 'lucide-react';
 import { WasteReport, UserRole, Comment } from '../types';

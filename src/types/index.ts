@@ -15,6 +15,9 @@ export interface User {
 }
 
 export type WasteCategory = 'Plastic' | 'Glass' | 'Organic' | 'Paper' | 'Metal' | 'Electronic' | 'Mixed Waste';
+export const WASTE_CATEGORIES: WasteCategory[] = ['Plastic', 'Glass', 'Organic', 'Paper', 'Metal', 'Electronic', 'Mixed Waste'];
+
+export const FACULTIES = ['Engineering', 'Physical Sciences', 'Biological Sciences', 'Arts & Humanities', 'Agriculture', 'Law'];
 export type ReportPriority = 'Low' | 'Medium' | 'High' | 'Emergency';
 export type ReportStatus = 'Pending' | 'Assigned' | 'In Progress' | 'Completed';
 

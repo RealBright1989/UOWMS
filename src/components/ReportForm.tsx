@@ -3,7 +3,7 @@ import {
   Upload, BrainCircuit, Sparkles, MapPin, 
   ArrowRight, Loader2 
 } from 'lucide-react';
-import { WasteCategory, ReportPriority } from '../types';
+import { WasteCategory, ReportPriority, FACULTIES, WASTE_CATEGORIES } from '../types';
 
 interface ReportFormProps {
   onSubmitReport: (data: any) => void;
@@ -315,13 +315,9 @@ export default function ReportForm({ onSubmitReport, onNavigateTab }: ReportForm
                 onChange={(e) => setCategory(e.target.value as WasteCategory)}
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl focus:border-green-500 focus:outline-none transition font-semibold"
               >
-                <option value="Plastic">Plastic</option>
-                <option value="Glass">Glass</option>
-                <option value="Organic">Organic</option>
-                <option value="Paper">Paper</option>
-                <option value="Metal">Metal</option>
-                <option value="Electronic">Electronic</option>
-                <option value="Mixed Waste">Mixed Waste</option>
+                {WASTE_CATEGORIES.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
               </select>
             </div>
 
@@ -375,12 +371,9 @@ export default function ReportForm({ onSubmitReport, onNavigateTab }: ReportForm
                 onChange={(e) => setFaculty(e.target.value)}
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl focus:border-green-500 focus:outline-none transition font-semibold"
               >
-                <option value="Engineering">Faculty of Engineering</option>
-                <option value="Physical Sciences">Faculty of Physical Sciences</option>
-                <option value="Biological Sciences">Faculty of Biological Sciences</option>
-                <option value="Arts & Humanities">Faculty of Arts & Humanities</option>
-                <option value="Agriculture">Faculty of Agriculture</option>
-                <option value="Law">Faculty of Law</option>
+                {FACULTIES.map(f => (
+                  <option key={f} value={f}>Faculty of {f}</option>
+                ))}
                 <option value="Hostel Area">Hostels Precincts</option>
                 <option value="Administrative block">Administrative Blocks</option>
               </select>

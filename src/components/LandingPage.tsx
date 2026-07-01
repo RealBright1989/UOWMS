@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ArrowRight, Menu, X, CheckCircle, Star, ChevronDown, ChevronLeft, ChevronRight, Users, Trash2, BarChart3, Recycle, Monitor, MapPin, Mail, Phone, Quote, Truck, Award, Layers } from 'lucide-react';
 import UnicrossLogo from './UnicrossLogo';
-import MapSection from './MapSection';
 
 interface LandingPageProps {
   onNavigateToLogin: () => void;
@@ -441,8 +440,6 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister, o
           </div>
         </div>
       </section>
-
-      <MapSection />
 
       <section id="demo-access" className="py-24 bg-gradient-to-r from-green-900 to-slate-900 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(16,185,129,0.08),transparent_50%)] pointer-events-none" />

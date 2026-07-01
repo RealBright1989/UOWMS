@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
+import maplibreglWorkerUrl from 'maplibre-gl/dist/maplibre-gl-csp-worker.js?url';
 import 'maplibre-gl/dist/maplibre-gl.css';
+
+maplibregl.setWorkerUrl(maplibreglWorkerUrl);
 
 interface BinMarker {
   id: string;
@@ -77,24 +80,13 @@ const osmStyle: maplibregl.Style = {
   ],
 };
 
-function createBinGeoJSON(bins: BinMarker[]) {
+function createGeoJSON<T extends { location: [number, number] }>(items: T[]) {
   return {
     type: 'FeatureCollection' as const,
-    features: bins.map(b => ({
+    features: items.map(item => ({
       type: 'Feature' as const,
-      geometry: { type: 'Point' as const, coordinates: b.location },
-      properties: { ...b },
-    })),
-  };
-}
-
-function createTruckGeoJSON(trucks: TruckMarker[]) {
-  return {
-    type: 'FeatureCollection' as const,
-    features: trucks.map(t => ({
-      type: 'Feature' as const,
-      geometry: { type: 'Point' as const, coordinates: t.location },
-      properties: { ...t },
+      geometry: { type: 'Point' as const, coordinates: item.location },
+      properties: { ...item },
     })),
   };
 }
@@ -123,12 +115,12 @@ export default function MapSection() {
     m.on('load', () => {
       m.addSource('bins', {
         type: 'geojson',
-        data: createBinGeoJSON(bins),
+        data: createGeoJSON(bins),
       });
 
       m.addSource('trucks', {
         type: 'geojson',
-        data: createTruckGeoJSON(trucks),
+        data: createGeoJSON(trucks),
       });
 
       m.addLayer({

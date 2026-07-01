@@ -3,7 +3,7 @@ import {
   Plus, CheckCircle, Clock, Trash2, 
   ArrowRight, Sparkles, MapPin, Calendar 
 } from 'lucide-react';
-import { WasteReport, User } from '../types';
+import { WasteReport, User, WASTE_CATEGORIES } from '../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface UserDashboardProps {
@@ -29,7 +29,7 @@ export default function UserDashboard({
   const completedCount = studentReports.filter(r => r.status === 'Completed').length;
 
   // Chart Data preparation: Category Breakdown
-  const categories = ['Plastic', 'Glass', 'Organic', 'Paper', 'Metal', 'Electronic', 'Mixed Waste'];
+  const categories = WASTE_CATEGORIES;
   const categoryChartColors = ['#10B981', '#3B82F6', '#16A34A', '#F59E0B', '#EF4444', '#8B5CF6', '#64748B'];
   
   const categoryData = categories.map((cat, i) => {

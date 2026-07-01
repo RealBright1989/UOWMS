@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Trash2, ArrowRight, Sparkles } from 'lucide-react';
-import { UserRole } from '../types';
+import { UserRole, FACULTIES } from '../types';
 import UnicrossLogo from './UnicrossLogo';
 
 interface AuthScreensProps {
@@ -370,12 +370,9 @@ export default function AuthScreens({ mode, onSwitchMode, onLogin, onRegister, o
                       onChange={(e) => setFaculty(e.target.value)}
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-800 text-xs text-white rounded-xl focus:border-green-500 focus:outline-none transition"
                     >
-                      <option value="Engineering">Engineering</option>
-                      <option value="Physical Sciences">Physical Sciences</option>
-                      <option value="Biological Sciences">Biological Sciences</option>
-                      <option value="Arts & Humanities">Arts & Humanities</option>
-                      <option value="Agriculture">Agriculture</option>
-                      <option value="Law">Law</option>
+                      {FACULTIES.map(f => (
+                        <option key={f} value={f}>{f}</option>
+                      ))}
                     </select>
                   </div>
                   <div className="space-y-1.5">

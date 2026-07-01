@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  User, WasteReport, Notification, ActivityLog, UserRole, WasteCategory, ReportStatus, Comment 
+  User, WasteReport, Notification, ActivityLog, UserRole, WasteCategory, ReportStatus, Comment, WASTE_CATEGORIES 
 } from './types';
 import { 
   INITIAL_USERS, INITIAL_REPORTS, INITIAL_NOTIFICATIONS, INITIAL_ACTIVITY_LOGS 
@@ -16,6 +16,7 @@ import AdminDashboard from './components/AdminDashboard';
 import ReportForm from './components/ReportForm';
 import ReportDetails from './components/ReportDetails';
 import SettingsScreen from './components/SettingsScreen';
+import MapSection from './components/MapSection';
 
 // Extra helper icon imports for internal views
 import { Bell, History, Search, FileText, Download } from 'lucide-react';
@@ -617,14 +618,10 @@ export default function App() {
                         onChange={(e) => setHistCategory(e.target.value)}
                         className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 text-xs rounded-xl focus:outline-none focus:border-green-500 font-semibold text-slate-500"
                       >
-                        <option value="all">👁 All Materials Categories</option>
-                        <option value="Plastic">Plastic</option>
-                        <option value="Glass">Glass</option>
-                        <option value="Organic">Organic</option>
-                        <option value="Paper">Paper</option>
-                        <option value="Metal">Metal</option>
-                        <option value="Electronic">Electronic</option>
-                        <option value="Mixed Waste">Mixed Waste</option>
+                        <option value="all">All Materials Categories</option>
+                        {WASTE_CATEGORIES.map(c => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
                       </select>
                     </div>
 
@@ -721,12 +718,17 @@ export default function App() {
                 </div>
               )}
 
-              {/* PORTAL TAB: CONFIGURATION / SETTINGS */}
+              {/* PORTAL TAB: SETTINGS */}
               {activeTab === 'settings' && (
                 <SettingsScreen
                   currentUser={currentUser}
                   onUpdateProfile={handleUpdateProfile}
                 />
+              )}
+
+              {/* PORTAL TAB: LIVE MAP */}
+              {activeTab === 'live-map' && (
+                <MapSection />
               )}
             </>
 

@@ -3,7 +3,7 @@ import {
   Users, ClipboardList, ShieldAlert, CheckCircle2, Search, 
   Filter, MapPin, Trash2, Edit2 
 } from 'lucide-react';
-import { WasteReport, User, ActivityLog } from '../types';
+import { WasteReport, User, ActivityLog, WASTE_CATEGORIES } from '../types';
 import { 
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, 
   XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell 
@@ -46,7 +46,7 @@ export default function AdminDashboard({
   const activeJobsCount = reports.filter(r => r.status === 'Assigned' || r.status === 'In Progress').length;
   
   // Charts preparation
-  const categories = ['Plastic', 'Glass', 'Organic', 'Paper', 'Metal', 'Electronic', 'Mixed Waste'];
+  const categories = WASTE_CATEGORIES;
   const colors = ['#10B981', '#3B82F6', '#16A34A', '#F59E0B', '#EF4444', '#8B5CF6', '#64748B'];
   
   const categoryChartData = categories.map((cat, i) => {

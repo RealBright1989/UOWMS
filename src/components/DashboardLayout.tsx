@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Bell, Settings, LogOut, Menu, X, BarChart3, 
-  Plus, ClipboardList, History, MapPin 
+  Plus, ClipboardList, History, MapPin, Users 
 } from 'lucide-react';
 import { UserRole, User } from '../types';
 import UnicrossLogo from './UnicrossLogo';
@@ -37,6 +37,7 @@ export default function DashboardLayout({
       { id: 'history', label: 'History & Archives', icon: History, roles: ['student', 'staff', 'admin'] },
       { id: 'live-map', label: 'Live Fleet Map', icon: MapPin, roles: ['student', 'staff', 'admin'] },
       { id: 'notifications', label: 'Notifications', icon: Bell, badge: unreadNotificationsCount > 0 ? unreadNotificationsCount : undefined, roles: ['student', 'staff', 'admin'] },
+      { id: 'admin-users', label: 'User Directory', icon: Users, roles: ['admin'] },
 
       { id: 'settings', label: 'Configuration', icon: Settings, roles: ['student', 'staff', 'admin'] },
     ];

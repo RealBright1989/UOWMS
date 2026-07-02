@@ -132,6 +132,7 @@ export default function App() {
   const handleRegister = (data: any) => {
     const newUser: User = {
       id: 'u_' + Math.floor(Math.random() * 1000),
+      role: 'student',
       ...data,
       avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80'
     };
@@ -729,6 +730,21 @@ export default function App() {
               {/* PORTAL TAB: LIVE MAP */}
               {activeTab === 'live-map' && (
                 <MapSection />
+              )}
+
+              {/* PORTAL TAB: USER DIRECTORY */}
+              {activeTab === 'admin-users' && (
+                <AdminDashboard
+                  reports={reports}
+                  users={users}
+                  activityLogs={activityLogs}
+                  onSelectReport={setSelectedReport}
+                  onUpdateUserStatus={handleUpdateUserStatus}
+                  onUpdateUserRole={handleUpdateUserRole}
+                  onDeleteUser={handleDeleteUser}
+                  onNavigateTab={setActiveTab}
+                  initialTab="user-manager"
+                />
               )}
             </>
 

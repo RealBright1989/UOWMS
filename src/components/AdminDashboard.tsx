@@ -18,6 +18,7 @@ interface AdminDashboardProps {
   onUpdateUserRole: (userId: string, newRole: User['role']) => void;
   onDeleteUser: (userId: string) => void;
   onNavigateTab: (tab: string) => void;
+  initialTab?: 'analytics' | 'user-manager' | 'activities';
 }
 
 export default function AdminDashboard({
@@ -28,11 +29,12 @@ export default function AdminDashboard({
   onUpdateUserStatus,
   onUpdateUserRole,
   onDeleteUser,
-  onNavigateTab
+  onNavigateTab,
+  initialTab = 'analytics'
 }: AdminDashboardProps) {
   
   // Local sub-tabs
-  const [adminSubTab, setAdminSubTab] = useState<'analytics' | 'user-manager' | 'activities'>('analytics');
+  const [adminSubTab, setAdminSubTab] = useState<'analytics' | 'user-manager' | 'activities'>(initialTab);
   
   // User Manager states
   const [searchTerm, setSearchTerm] = useState('');

@@ -16,6 +16,7 @@ export default function SettingsScreen({ currentUser, onUpdateProfile }: Setting
   const [email, setEmail] = useState(currentUser.email);
   const [phone, setPhone] = useState(currentUser.phoneNumber || '');
   const [hostel, setHostel] = useState(currentUser.hostel || '');
+  const [avatarUrl, setAvatarUrl] = useState(currentUser.avatar || '');
   
   const [emailAlerts, setEmailAlerts] = useState(true);
   const [smsAlerts, setSmsAlerts] = useState(false);
@@ -34,7 +35,8 @@ export default function SettingsScreen({ currentUser, onUpdateProfile }: Setting
       name,
       email,
       phoneNumber: phone,
-      hostel
+      hostel,
+      avatar: avatarUrl
     });
     setSaveBanner(true);
     setTimeout(() => setSaveBanner(false), 5000);
@@ -84,6 +86,25 @@ export default function SettingsScreen({ currentUser, onUpdateProfile }: Setting
             </h3>
             
             <form onSubmit={handleProfileSubmit} className="space-y-4 text-xs font-semibold text-slate-600">
+              <div className="flex items-center gap-4 pb-4 border-b border-slate-100">
+                <img
+                  src={avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'}
+                  alt="avatar"
+                  className="w-16 h-16 rounded-full object-cover border-2 border-slate-200"
+                  onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'; }}
+                />
+                <div className="flex-1">
+                  <label className="text-slate-400 block mb-1">Profile Picture URL</label>
+                  <input
+                    id="set-avatar"
+                    type="text"
+                    placeholder="Paste image URL..."
+                    value={avatarUrl}
+                    onChange={(e) => setAvatarUrl(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 text-slate-850 text-xs rounded-xl focus:border-green-500 focus:outline-none transition"
+                  />
+                </div>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label htmlFor="set-name" className="text-slate-400">Full Name</label>

@@ -1,6 +1,0 @@
-{
-  "name": "UNICROSS Online Campus Waste Management System (OCWMS)",
-  "description": "A modern, responsive dashboard to report waste, schedule collections, monitor campus cleaning, and classify waste with AI on the UNICROSS campus.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

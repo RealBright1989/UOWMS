@@ -16,6 +16,54 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
+const THEMES = {
+  student: {
+    sidebar: 'bg-stone-900 border-stone-800/80',
+    brand: 'from-amber-500 to-orange-600',
+    active: 'bg-amber-600 text-white shadow-amber-950/25',
+    hover: 'hover:bg-stone-800/50 hover:text-amber-300',
+    iconHover: 'group-hover:text-amber-400',
+    status: 'bg-amber-500',
+    statusBg: 'bg-amber-50 text-amber-700 border-amber-100/50',
+    badge: 'bg-amber-500/25 text-amber-200',
+    topbarBadge: 'bg-amber-50 text-amber-700 border-amber-100',
+    switchActive: 'bg-amber-600 text-white',
+    switchInactive: 'bg-stone-800 text-stone-400 hover:text-white',
+    label: 'text-amber-400',
+    heading: 'text-amber-500',
+  },
+  staff: {
+    sidebar: 'bg-slate-900 border-slate-800/80',
+    brand: 'from-blue-500 to-cyan-600',
+    active: 'bg-blue-600 text-white shadow-blue-950/25',
+    hover: 'hover:bg-slate-800/50 hover:text-blue-300',
+    iconHover: 'group-hover:text-blue-400',
+    status: 'bg-blue-500',
+    statusBg: 'bg-blue-50 text-blue-700 border-blue-100/50',
+    badge: 'bg-blue-500/25 text-blue-200',
+    topbarBadge: 'bg-blue-50 text-blue-700 border-blue-100',
+    switchActive: 'bg-blue-600 text-white',
+    switchInactive: 'bg-slate-800 text-slate-400 hover:text-white',
+    label: 'text-blue-400',
+    heading: 'text-blue-500',
+  },
+  admin: {
+    sidebar: 'bg-violet-950 border-violet-900/80',
+    brand: 'from-violet-500 to-purple-700',
+    active: 'bg-violet-600 text-white shadow-violet-950/25',
+    hover: 'hover:bg-violet-900/50 hover:text-violet-300',
+    iconHover: 'group-hover:text-violet-400',
+    status: 'bg-violet-500',
+    statusBg: 'bg-violet-50 text-violet-700 border-violet-100/50',
+    badge: 'bg-violet-500/25 text-violet-200',
+    topbarBadge: 'bg-violet-50 text-violet-700 border-violet-100',
+    switchActive: 'bg-violet-600 text-white',
+    switchInactive: 'bg-violet-900 text-violet-400 hover:text-white',
+    label: 'text-violet-400',
+    heading: 'text-violet-500',
+  },
+};
+
 export default function DashboardLayout({ 
   currentUser, 
   onLogout, 
@@ -26,7 +74,7 @@ export default function DashboardLayout({
   children 
 }: DashboardLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
+  const theme = THEMES[currentUser.role];
 
   // Configure navigation lists based on role
   const getSidebarItems = () => {
@@ -53,7 +101,7 @@ export default function DashboardLayout({
       <header className="md:hidden sticky top-0 z-40 bg-white border-b border-slate-100 px-4 py-3 flex justify-between items-center bg-white/90 backdrop-blur-md">
         <div className="flex items-center gap-2">
           <UnicrossLogo size="sm" className="h-9 w-9 shrink-0" />
-          <span className="font-extrabold text-sm tracking-tight bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">UNICROSS OCWMS</span>
+          <span className={`font-extrabold text-sm tracking-tight bg-gradient-to-r ${theme.brand} bg-clip-text text-transparent`}>UNICROSS OCWMS</span>
         </div>
         
         <div className="flex items-center gap-3">
@@ -78,7 +126,7 @@ export default function DashboardLayout({
       {/* Sidebar Navigation: Desktop & Mobile Drawer */}
       <aside className={`
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} 
-        md:translate-x-0 fixed md:sticky top-0 left-0 h-screen w-72 bg-slate-900 text-slate-300 border-r border-slate-800/80 z-50 flex flex-col justify-between transition-transform duration-300 ease-in-out md:shrink-0
+        md:translate-x-0 fixed md:sticky top-0 left-0 h-screen w-72 z-50 flex flex-col justify-between transition-transform duration-300 ease-in-out md:shrink-0 ${theme.sidebar} text-slate-300 border-r
       `}>
         {/* Brand Header */}
         <div className="p-6 border-b border-slate-800/65 flex items-center justify-between">
@@ -86,7 +134,7 @@ export default function DashboardLayout({
             <UnicrossLogo size="sm" className="h-11 w-11 shrink-0" theme="dark" />
             <div>
               <span className="font-black text-white text-base tracking-tight block">UNICROSS</span>
-              <span className="text-[10px] text-green-400 font-mono tracking-wider block uppercase">OCWMS PORTAL</span>
+              <span className={`text-[10px] ${theme.heading} font-mono tracking-wider block uppercase`}>OCWMS PORTAL</span>
             </div>
           </div>
           <button className="md:hidden p-1 bg-slate-800 rounded-lg" onClick={() => setMobileMenuOpen(false)}>
@@ -96,7 +144,7 @@ export default function DashboardLayout({
 
         {/* Navigation lists */}
         <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto custom-scrollbar">
-          <p className="text-[9px] text-slate-500 font-bold tracking-widest uppercase px-3.5 mb-3">Core Operation Console</p>
+          <p className={`text-[9px] ${theme.label} font-bold tracking-widest uppercase px-3.5 mb-3`}>Core Operation Console</p>
           
           {navItems.map((item) => {
             const IconComponent = item.icon;
@@ -112,12 +160,12 @@ export default function DashboardLayout({
                 className={`
                   w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-left text-xs font-semibold tracking-wide transition-all group
                   ${isActive 
-                    ? 'bg-green-600 text-white shadow-xl shadow-green-950/25' 
-                    : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}
+                    ? theme.active 
+                    : `text-slate-400 ${theme.hover}`}
                 `}
               >
                 <div className="flex items-center gap-3">
-                  <IconComponent className={`h-4.5 w-4.5 transition-transform group-hover:scale-105 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-green-400'}`} />
+                  <IconComponent className={`h-4.5 w-4.5 transition-transform group-hover:scale-105 ${isActive ? 'text-white' : `text-slate-400 ${theme.iconHover}`}`} />
                   <span>{item.label}</span>
                 </div>
                 {item.badge && (
@@ -136,29 +184,29 @@ export default function DashboardLayout({
           {/* Quick switch widget for evaluators */}
           <div className="mb-4 bg-slate-800/40 p-2.5 rounded-xl border border-slate-800/80 text-left">
             <div className="flex justify-between items-center mb-1.5">
-              <span className="text-[9px] font-bold text-green-400 uppercase tracking-widest">Test Profile Swapper</span>
-              <span className="text-[8px] bg-green-500/25 text-green-200 px-1 py-0.2 rounded font-mono font-bold uppercase animate-pulse">SANDBOX</span>
+              <span className={`text-[9px] font-bold ${theme.label} uppercase tracking-widest`}>Test Profile Swapper</span>
+              <span className={`text-[8px] ${theme.badge} px-1 py-0.2 rounded font-mono font-bold uppercase animate-pulse`}>SANDBOX</span>
             </div>
             
             <div className="grid grid-cols-3 gap-1 text-[10px]">
               <button 
                 id="role-switch-student"
                 onClick={() => onToggleRoleBypass('student')}
-                className={`py-1 text-center font-bold rounded-md transition ${currentUser.role === 'student' ? 'bg-green-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                className={`py-1 text-center font-bold rounded-md transition ${currentUser.role === 'student' ? theme.switchActive : theme.switchInactive}`}
               >
                 Stud.
               </button>
               <button 
                 id="role-switch-staff"
                 onClick={() => onToggleRoleBypass('staff')}
-                className={`py-1 text-center font-bold rounded-md transition ${currentUser.role === 'staff' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                className={`py-1 text-center font-bold rounded-md transition ${currentUser.role === 'staff' ? theme.switchActive : theme.switchInactive}`}
               >
                 Staff
               </button>
               <button 
                 id="role-switch-admin"
                 onClick={() => onToggleRoleBypass('admin')}
-                className={`py-1 text-center font-bold rounded-md transition ${currentUser.role === 'admin' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                className={`py-1 text-center font-bold rounded-md transition ${currentUser.role === 'admin' ? theme.switchActive : theme.switchInactive}`}
               >
                 Admin
               </button>
@@ -202,7 +250,7 @@ export default function DashboardLayout({
           
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Active Station</span>
-            <span className="text-sm font-extrabold text-slate-800 capitalize bg-slate-50 border border-slate-100 px-3 py-1 rounded-lg">
+            <span className={`text-sm font-extrabold capitalize px-3 py-1 rounded-lg ${theme.topbarBadge}`}>
               {currentUser.role} Space
             </span>
           </div>
@@ -211,8 +259,8 @@ export default function DashboardLayout({
           <div className="flex items-center gap-4">
             
             {/* Simulation Clock Indicator */}
-            <div className="hidden lg:flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1 rounded-xl text-xs font-semibold border border-green-100/50">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-ping" />
+            <div className={`hidden lg:flex items-center gap-2 px-3 py-1 rounded-xl text-xs font-semibold border ${theme.statusBg}`}>
+              <span className={`w-2 h-2 ${theme.status} rounded-full animate-ping`} />
               <span>Simulated Campus Node Operational</span>
             </div>
 

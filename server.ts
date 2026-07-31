@@ -1,191 +1,86 @@
 import express from 'express';
 import path from 'path';
 import dotenv from 'dotenv';
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
+
+import authRoutes from './server/routes/auth';
+import reportRoutes from './server/routes/reports';
+import userRoutes from './server/routes/users';
+import notificationRoutes from './server/routes/notifications';
+import logRoutes from './server/routes/logs';
+import mapRoutes from './server/routes/map';
 
 dotenv.config();
 
 const app = express();
 const PORT = 3000;
 
-// Set up body parsers with limits for image uploads
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// Initialize Gemini client lazily and safely
+// API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/logs', logRoutes);
+app.use('/api/map', mapRoutes);
+
+// AI Classification (kept inline)
 let aiClient: GoogleGenAI | null = null;
 const getGeminiClient = (): GoogleGenAI | null => {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey || apiKey === 'MY_GEMINI_API_KEY' || apiKey.trim() === '') {
-    return null;
-  }
-  if (!aiClient) {
-    aiClient = new GoogleGenAI({
-      apiKey: apiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        },
-      },
-    });
-  }
+  if (!apiKey || apiKey === 'MY_GEMINI_API_KEY' || apiKey.trim() === '') return null;
+  if (!aiClient) aiClient = new GoogleGenAI({ apiKey, httpOptions: { headers: { 'User-Agent': 'aistudio-build' } } });
   return aiClient;
 };
 
-// Waste Classifier Endpoint
 app.post('/api/classify', async (req, res) => {
   try {
     const { image, description } = req.body;
     const client = getGeminiClient();
-
     if (!client) {
-      console.log('Gemini API key is not configured or in placeholder state. Falling back to local heuristic analyzer.');
-      // Local Heuristic Fallback for previewing without configuring a key
-      const descLower = (description || '').toLowerCase();
-      let category = 'Mixed Waste';
-      let confidence = 0.85;
-      let handlingTip = 'Place securely in any trash bin.';
-      let recyclePotential: 'High' | 'Medium' | 'Low' = 'Low';
-      let greenTip = 'Try to separate reusable items next time to help campus recycling efforts!';
-
-      if (descLower.includes('bottle') || descLower.includes('plastic') || descLower.includes('cup') || descLower.includes('nylon') || descLower.includes('can')) {
-        category = 'Plastic';
-        confidence = 0.92;
-        handlingTip = 'Clean food residue first. Place in the Green Bin labeled PLASTICS.';
-        recyclePotential = 'High';
-        greenTip = 'Plastic bottles can take up to 450 years to decompose in campus landfills!';
-      } else if (descLower.includes('glass') || descLower.includes('jar') || descLower.includes('cup') && descLower.includes('glass') || descLower.includes('window')) {
-        category = 'Glass';
-        confidence = 0.90;
-        handlingTip = 'Handle carefully to prevent breakage. Dispose in the Blue Bin labeled GLASS.';
-        recyclePotential = 'High';
-        greenTip = 'Glass does not wear out; it can be recycled endlessly without loss of purity or quality!';
-      } else if (descLower.includes('food') || descLower.includes('banana') || descLower.includes('peel') || descLower.includes('organic') || descLower.includes('apple') || descLower.includes('plant') || descLower.includes('leaf') || descLower.includes('leaves') || descLower.includes('rice') || descLower.includes('waste')) {
-        category = 'Organic';
-        confidence = 0.95;
-        handlingTip = 'Dispose within 12 hours inside compost boxes near the cafeteria or Faculty of Agriculture farm.';
-        recyclePotential = 'High';
-        greenTip = 'Organic food waste produces methane, but is highly valuable as nutrient-rich compost for campus forestry!';
-      } else if (descLower.includes('paper') || descLower.includes('book') || descLower.includes('notebook') || descLower.includes('exam') || descLower.includes('cardboard') || descLower.includes('box')) {
-        category = 'Paper';
-        confidence = 0.91;
-        handlingTip = 'Keep dry. Flatten boxes and deposit in the Blue Bin labeled PAPERS.';
-        recyclePotential = 'High';
-        greenTip = 'Recycling 1 ton of campus examination papers saves up to 17 mature trees and 7,000 gallons of water!';
-      } else if (descLower.includes('metal') || descLower.includes('iron') || descLower.includes('can') || descLower.includes('aluminium') || descLower.includes('tin') || descLower.includes('pipe')) {
-        category = 'Metal';
-        confidence = 0.88;
-        handlingTip = 'Ensure cans are thoroughly crushed. Drop items in the Grey Bin labeled METALS.';
-        recyclePotential = 'High';
-        greenTip = 'Aluminium cans are back on the shelf as new cans in less than 60 days when recycled!';
-      } else if (descLower.includes('electronic') || descLower.includes('wire') || descLower.includes('battery') || descLower.includes('phone') || descLower.includes('computer') || descLower.includes('charger') || descLower.includes('bulb')) {
-        category = 'Electronic';
-        confidence = 0.94;
-        handlingTip = 'DO NOT incinerate or place in general campus trash. Request specialist electronic disposal.';
-        recyclePotential = 'High';
-        greenTip = 'E-waste represents 2% of campus landfills but accounts for 70% of highly toxic heavy metal pollution!';
-      }
-
-      return res.json({
-        category,
-        confidence,
-        handlingTip,
-        recyclePotential,
-        greenTip,
-        note: 'Simulated classification (configure GEMINI_API_KEY in secrets for live AI)'
-      });
+      const d = (description || '').toLowerCase();
+      let cat = 'Mixed Waste', conf = 0.85, tip = 'Place in any trash bin.';
+      let rp: 'High' | 'Medium' | 'Low' = 'Low';
+      let gt = 'Try separating reusable items for campus recycling!';
+      if (d.includes('bottle') || d.includes('plastic') || d.includes('cup') || d.includes('nylon')) { cat='Plastic'; conf=0.92; tip='Clean residue. Place in Green Bin labeled PLASTICS.'; rp='High'; gt='Plastic bottles take 450 years to decompose!'; }
+      else if (d.includes('glass') || d.includes('jar')) { cat='Glass'; conf=0.90; tip='Handle carefully. Dispose in Blue Bin labeled GLASS.'; rp='High'; gt='Glass recycles endlessly without quality loss!'; }
+      else if (d.includes('food') || d.includes('banana') || d.includes('peel') || d.includes('organic') || d.includes('leaf')) { cat='Organic'; conf=0.95; tip='Dispose in compost boxes near cafeteria.'; rp='High'; gt='Organic waste makes nutrient-rich compost!'; }
+      else if (d.includes('paper') || d.includes('book') || d.includes('cardboard')) { cat='Paper'; conf=0.91; tip='Keep dry, flatten boxes. Deposit in Blue Bin.'; rp='High'; gt='1 ton of paper saves 17 trees!'; }
+      else if (d.includes('metal') || d.includes('iron') || d.includes('aluminium')) { cat='Metal'; conf=0.88; tip='Crush cans. Drop in Grey Bin labeled METALS.'; rp='High'; gt='Aluminium cans return as new cans in 60 days!'; }
+      else if (d.includes('electronic') || d.includes('battery') || d.includes('phone') || d.includes('bulb')) { cat='Electronic'; conf=0.94; tip='DO NOT incinerate. Request specialist disposal.'; rp='High'; gt='E-waste is 2% of landfill but 70% of toxic pollution!'; }
+      return res.json({ category: cat, confidence: conf, handlingTip: tip, recyclePotential: rp, greenTip: gt, note: 'Simulated (set GEMINI_API_KEY for live AI)' });
     }
-
-    // Call real Gemini API
-    console.log('Sending classification request to Gemini API (gemini-3.5-flash)...');
-    
     let contents: any[] = [];
-    
     if (image) {
-      // image is usually a base64 encoded string from canvas or input
       const match = image.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
-      if (match) {
-        contents.push({
-          inlineData: {
-            mimeType: match[1],
-            data: match[2]
-          }
-        });
-      }
+      if (match) contents.push({ inlineData: { mimeType: match[1], data: match[2] } });
     }
-
-    const promptText = `
-    Analyze this campus waste entry. 
-    ${description ? `Description provided by the user: "${description}".` : ''}
-    Categorize it into exactly one of these categories: Plastic, Glass, Organic, Paper, Metal, Electronic, Mixed Waste.
-    
-    Provide the response in raw JSON format matching this schema:
-    {
-      "category": "Plastic | Glass | Organic | Paper | Metal | Electronic | Mixed Waste",
-      "confidence": 0.0 to 1.0,
-      "handlingTip": "Short practical advisory on where or how to dispose of this specifically on a university campus",
-      "recyclePotential": "High | Medium | Low",
-      "greenTip": "One interesting, inspiring environmental stat or fact related to this type of waste"
-    }
-    
-    Ensure you return ONLY a JSON block, no markdown formatting.
-    `;
-
-    contents.push({ text: promptText });
-
-    const response = await client.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: { parts: contents },
-      config: {
-        responseMimeType: 'application/json',
-      }
-    });
-
-    const resultText = response.text || '{}';
-    try {
-      const parsed = JSON.parse(resultText.replace(/```json|```/gi, '').trim());
-      return res.json(parsed);
-    } catch (parseErr) {
-      console.error('Failed to parse Gemini output:', resultText, parseErr);
-      return res.status(500).json({ error: 'AI gave an invalid response format.' });
-    }
-
-  } catch (error: any) {
-    console.error('Gemini classification crash:', error);
-    return res.status(500).json({ error: error.message || 'AI Classification error occured.' });
+    contents.push({ text: `Analyze waste.${description ? ` Description: "${description}".` : ''} Categorize as Plastic, Glass, Organic, Paper, Metal, Electronic, or Mixed Waste. Return JSON: {category, confidence:0-1, handlingTip, recyclePotential: High|Medium|Low, greenTip}. JSON only.` });
+    const response = await client.models.generateContent({ model: 'gemini-3.5-flash', contents: { parts: contents }, config: { responseMimeType: 'application/json' } });
+    const parsed = JSON.parse((response.text || '{}').replace(/```json|```/gi, '').trim());
+    res.json(parsed);
+  } catch (e: any) {
+    res.status(500).json({ error: e.message || 'Classification error' });
   }
 });
 
-// App Health Check
 app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'online',
-    campus: 'UNICROSS Online Campus Waste Management System',
-    geminiConfigured: !!process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'MY_GEMINI_API_KEY',
-    time: new Date().toISOString()
-  });
+  res.json({ status: 'online', campus: 'UNICROSS OCWMS', time: new Date().toISOString() });
 });
 
-// Server client assets in production
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
+    const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'spa' });
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
+    app.get('*', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
   }
-
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`UNICROSS OCWMS server starting on http://localhost:${PORT}`);
-  });
+  app.listen(PORT, '0.0.0.0', () => console.log(`UNICROSS OCWMS server starting on http://localhost:${PORT}`));
 }
 
 startServer();

@@ -202,19 +202,19 @@ export default function ReportForm({ onSubmitReport, onNavigateTab }: ReportForm
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               
               {/* Box upload */}
-              <div className="border-2 border-dashed border-slate-200 hover:border-green-500 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer relative group min-h-[160px] bg-slate-50 transition">
+              <label className="border-2 border-dashed border-slate-200 hover:border-green-500 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer relative group min-h-[160px] bg-slate-50 transition">
                 <input 
                   type="file" 
                   accept="image/*" 
                   onChange={handleFileChange} 
-                  className="absolute inset-0 opacity-0 cursor-pointer" 
+                  className="hidden" 
                 />
                 {image ? (
                   <div className="relative w-full h-full min-h-[135px] flex items-center justify-center">
                     <img src={image} alt="Report preview" className="max-h-[135px] max-w-full rounded-xl object-contain" />
                     <button 
                       type="button" 
-                      onClick={() => setImage(null)}
+                      onClick={(e) => { e.stopPropagation(); setImage(null); }}
                       className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-lg text-xs"
                     >
                       Clear
@@ -226,12 +226,12 @@ export default function ReportForm({ onSubmitReport, onNavigateTab }: ReportForm
                       <Upload className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-slate-700">Drag or Click here</p>
+                      <p className="text-xs font-bold text-slate-700">Click to upload photo</p>
                       <p className="text-[10px] text-slate-400">PNG, JPG up to 10MB</p>
                     </div>
                   </div>
                 )}
-              </div>
+              </label>
 
               {/* Preset Shortcuts */}
               <div className="space-y-2 text-left">

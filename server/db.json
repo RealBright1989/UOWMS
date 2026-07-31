@@ -1,0 +1,69 @@
+{
+  "users": [
+    {
+      "id": "u_169",
+      "name": "Brightokon444",
+      "email": "brightokon444@gmail.com",
+      "role": "student",
+      "status": "Active"
+    },
+    {
+      "id": "u_291",
+      "name": "Florence Effiong",
+      "email": "florence.effiong@unicross.edu.ng",
+      "role": "admin",
+      "status": "Active"
+    },
+    {
+      "id": "u_538",
+      "name": "Emeka Obi",
+      "email": "emeka.obi@unicross.edu.ng",
+      "role": "staff",
+      "status": "Active"
+    },
+    {
+      "id": "u_238",
+      "name": "Test",
+      "email": "test@uni.edu",
+      "role": "student",
+      "status": "Active"
+    }
+  ],
+  "reports": [
+    {
+      "id": "R-2529",
+      "status": "Pending",
+      "dateSubmitted": "2026-07-30T18:10:56.816Z",
+      "comments": [],
+      "category": "Plastic",
+      "priority": "High",
+      "location": {
+        "faculty": "Engineering",
+        "building": "Lab A"
+      },
+      "description": "Test report",
+      "studentId": "u_test",
+      "studentName": "Test User"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "not_260",
+      "title": "Plastic Incident Reported",
+      "message": "Report R-2529 registered at Engineering (High priority).",
+      "timestamp": "2026-07-30T18:10:56.816Z",
+      "read": false,
+      "type": "info"
+    }
+  ],
+  "logs": [
+    {
+      "id": "log_0",
+      "action": "New Report Filed",
+      "user": "Test User",
+      "role": "Student",
+      "timestamp": "2026-07-30T18:10:56.816Z",
+      "details": "Filed R-2529 (Plastic) at Lab A."
+    }
+  ]
+}

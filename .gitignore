@@ -7,3 +7,4 @@ coverage/
 server.err
 .env*
 !.env.example
+server/db.json

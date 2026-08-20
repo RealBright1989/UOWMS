@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
+// @ts-ignore – Vite provides the ?url import at build time
 import maplibreglWorkerUrl from 'maplibre-gl/dist/maplibre-gl-csp-worker.js?url';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
@@ -60,7 +61,7 @@ const statusColors: Record<string, string> = {
 
 const center: [number, number] = [8.351, 4.9755];
 
-const osmStyle: maplibregl.Style = {
+const osmStyle = {
   version: 8,
   name: 'OSM',
   sources: {
@@ -103,7 +104,7 @@ export default function MapSection() {
 
     const m = new maplibregl.Map({
       container: mapContainer.current,
-      style: osmStyle,
+      style: osmStyle as any,
       center,
       zoom: 15,
       attributionControl: false,

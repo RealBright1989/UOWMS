@@ -38,7 +38,7 @@ router.post('/', (req: Request, res: Response) => {
   db.notifications.unshift({
     id: 'not_' + Math.floor(Math.random() * 1000),
     title: `${newReport.category} Incident Reported`,
-    message: `Report ${newReport.id} registered at ${newReport.location.faculty} (${newReport.priority} priority).`,
+    message: `Report ${newReport.id} registered at ${newReport.location?.faculty || newReport.location?.building || 'Unknown Location'} (${newReport.priority} priority).`,
     timestamp: new Date().toISOString(),
     read: false,
     type: 'info'
@@ -49,7 +49,7 @@ router.post('/', (req: Request, res: Response) => {
     user: newReport.studentName,
     role: 'Student',
     timestamp: new Date().toISOString(),
-    details: `Filed ${newReport.id} (${newReport.category}) at ${newReport.location.building}.`
+    details: `Filed ${newReport.id} (${newReport.category}) at ${newReport.location?.building || newReport.location?.faculty || 'Unknown'}.`
   });
   commit();
   res.status(201).json(newReport);
@@ -65,7 +65,7 @@ router.put('/:id/status', (req: Request, res: Response) => {
     db.notifications.unshift({
       id: 'not_' + Math.floor(Math.random() * 1000),
       title: `Cleanup Completed (${req.params.id})`,
-      message: `Your report at ${db.reports[idx].location.faculty} is fully cleared.`,
+      message: `Your report at ${db.reports[idx].location?.faculty || db.reports[idx].location?.address || 'campus'} is fully cleared.`,
       timestamp: new Date().toISOString(),
       read: false,
       type: 'success'

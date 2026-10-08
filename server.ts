@@ -9,6 +9,7 @@ import userRoutes from './server/routes/users';
 import notificationRoutes from './server/routes/notifications';
 import logRoutes from './server/routes/logs';
 import mapRoutes from './server/routes/map';
+import { initDb, flushDb, isUsingPostgres } from './server/data';
 
 dotenv.config();
 
@@ -67,10 +68,16 @@ app.post('/api/classify', async (req, res) => {
 });
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'online', campus: 'UNICROSS OCWMS', time: new Date().toISOString() });
+  res.json({
+    status: 'online',
+    campus: 'UNICROSS OCWMS',
+    database: isUsingPostgres() ? 'postgresql' : 'json',
+    time: new Date().toISOString()
+  });
 });
 
 async function startServer() {
+  await initDb();
   if (process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'spa' });
@@ -82,5 +89,8 @@ async function startServer() {
   }
   app.listen(Number(PORT), '0.0.0.0', () => console.log(`UNICROSS OCWMS server starting on http://localhost:${PORT}`));
 }
+
+process.on('SIGINT', async () => { await flushDb(); process.exit(0); });
+process.on('SIGTERM', async () => { await flushDb(); process.exit(0); });
 
 startServer();

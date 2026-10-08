@@ -7,7 +7,14 @@ router.post('/login', (req: Request, res: Response) => {
   const { email, role } = req.body;
   const db = getDb();
   let user = db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
-  if (!user) {
+  if (user) {
+    // Each role has its own secured entry point - block cross-portal sign-in.
+    if (user.role && role && user.role !== role) {
+      return res.status(403).json({
+        error: `This account is registered as ${user.role}. Please sign in through the ${user.role} portal.`
+      });
+    }
+  } else {
     user = {
       id: 'u_' + Math.floor(Math.random() * 1000),
       name: email.split('@')[0].split('.').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
@@ -31,7 +38,7 @@ router.post('/register', (req: Request, res: Response) => {
     role: 'student' as const,
     ...req.body,
     status: 'Active' as const,
-    avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80'
+    avatar: req.body.avatar || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80'
   };
   db.users.unshift(newUser);
   db.notifications.unshift({

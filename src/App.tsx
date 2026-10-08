@@ -15,15 +15,35 @@ import SettingsScreen from './components/SettingsScreen';
 import MapSection from './components/MapSection';
 
 import { Bell, Search, FileText, Download } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
-const MOCK_EMAILS = {
+const MOCK_EMAILS: Record<UserRole, string> = {
   student: 'brightokon444@gmail.com',
   staff: 'emeka.obi@unicross.edu.ng',
   admin: 'florence.effiong@unicross.edu.ng'
 };
 
+export const ROLE_PATHS: Record<UserRole, string> = {
+  student: '/portal/student',
+  staff: '/portal/staff',
+  admin: '/portal/admin'
+};
+
+export function pathToRole(path: string): UserRole | null {
+  const segments = path.replace(/\/+$/, '').split('/').filter(Boolean);
+  if (segments[0] === 'portal' && segments[1] && ['student', 'staff', 'admin'].includes(segments[1])) {
+    return segments[1] as UserRole;
+  }
+  return null;
+}
+
 export default function App() {
-  const [viewState, setViewState] = useState<'landing' | 'auth' | 'portal'>('landing');
+  const [portalRole, setPortalRole] = useState<UserRole | null>(() => pathToRole(window.location.pathname));
+  const [viewState, setViewState] = useState<'landing' | 'auth' | 'portal'>(
+    () => (pathToRole(window.location.pathname) ? 'auth' : 'landing')
+  );
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [activeTab, setActiveTab] = useState('dashboard');
 
@@ -38,8 +58,40 @@ export default function App() {
 
   const [selectedReport, setSelectedReport] = useState<WasteReport | null>(null);
 
+  const goToPortal = (role: UserRole, mode: 'login' | 'register' = 'login') => {
+    window.history.pushState({}, '', ROLE_PATHS[role]);
+    setPortalRole(role);
+    setAuthMode(role === 'student' ? mode : 'login');
+    setViewState('auth');
+  };
+
+  const goToLanding = () => {
+    window.history.pushState({}, '', '/');
+    setPortalRole(null);
+    setViewState('landing');
+  };
+
+  // Keep the browser back/forward buttons working across portals.
+  useEffect(() => {
+    const onPopState = () => {
+      const role = pathToRole(window.location.pathname);
+      setPortalRole(role);
+      if (!role) {
+        setViewState('landing');
+        return;
+      }
+      setAuthMode('login');
+      setCurrentUser(prev => (prev && prev.role !== role ? null : prev));
+      setViewState('portal');
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
   useEffect(() => {
     if (currentUser) {
+      setPortalRole(currentUser.role);
+      window.history.pushState({}, '', ROLE_PATHS[currentUser.role]);
       setViewState('portal');
     }
   }, [currentUser]);
@@ -52,6 +104,30 @@ export default function App() {
     api.getLogs().then(setActivityLogs).catch(() => {});
   }, []);
 
+  // Live sync: poll the server so a job assigned elsewhere shows up in the
+  // staff portal (and admin/student views) without a manual reload.
+  useEffect(() => {
+    const refresh = async () => {
+      try {
+        const [reps, usrs, nots, lgs] = await Promise.all([
+          api.getReports(),
+          api.getUsers(),
+          api.getNotifications(),
+          api.getLogs(),
+        ]);
+        setReports(reps);
+        setUsers(usrs);
+        setNotifications(nots);
+        setActivityLogs(lgs);
+        setSelectedReport(prev => (prev ? (reps.find(r => r.id === prev.id) ?? prev) : prev));
+      } catch {
+        /* transient network error - keep last known state */
+      }
+    };
+    const interval = setInterval(refresh, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   // History filters
   const [histSearch, setHistSearch] = useState('');
   const [histCategory, setHistCategory] = useState<string>('all');
@@ -60,6 +136,10 @@ export default function App() {
 
   // AUTH
   const handleLogin = async (email: string, role: UserRole) => {
+    if (portalRole && role !== portalRole) {
+      alert(`This is the ${portalRole} portal. Please sign in from the correct portal.`);
+      return;
+    }
     try {
       const res = await api.login(email, role);
       setCurrentUser(res.user);
@@ -76,6 +156,10 @@ export default function App() {
   };
 
   const handleRegister = async (data: any) => {
+    if (portalRole && portalRole !== 'student') {
+      alert('Registration is only available on the Student portal.');
+      return;
+    }
     try {
       const res = await api.register(data);
       setCurrentUser(res.user);
@@ -91,17 +175,10 @@ export default function App() {
 
   const handleLogout = () => {
     setCurrentUser(null);
+    localStorage.removeItem('unicross_ocwms_active_user');
+    window.history.pushState({}, '', '/');
+    setPortalRole(null);
     setViewState('landing');
-  };
-
-  const handleToggleRoleBypass = async (role: UserRole) => {
-    try {
-      const res = await api.login(MOCK_EMAILS[role], role);
-      setCurrentUser(res.user);
-      setActiveTab('dashboard');
-      setSelectedReport(null);
-      api.getReports().then(setReports).catch(() => {});
-    } catch {}
   };
 
   // REPORTS
@@ -196,12 +273,195 @@ export default function App() {
   };
 
   // EXPORT
-  const triggerMockExport = (format: 'PDF' | 'Excel') => {
-    setExportBanner(`Exporting sanitation records as .${format === 'PDF' ? 'pdf' : 'xlsx'}...`);
-    setTimeout(() => {
-      setExportBanner(null);
-      alert(`Download: UNICROSS_Sanitation_Manifest_${new Date().getFullYear()}.${format === 'PDF' ? 'pdf' : 'xlsx'}`);
-    }, 2800);
+  const exportRows = () => {
+    return activeHistoryList.map(rep => ({
+      id: rep.id,
+      category: rep.category,
+      location: `${rep.location.faculty} - ${rep.location.building}`,
+      description: rep.description,
+      priority: rep.priority,
+      status: rep.status,
+      reporter: rep.studentName,
+      date: new Date(rep.dateSubmitted).toLocaleDateString()
+    }));
+  };
+
+  const buildSanitationPdf = (rows: ReturnType<typeof exportRows>) => {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const W = doc.internal.pageSize.getWidth();
+    const H = doc.internal.pageSize.getHeight();
+    const M = 14;
+    const CW = W - M * 2;
+
+    const CATEGORY_COLORS: Record<string, [number, number, number]> = {
+      Plastic: [34, 197, 94], Glass: [168, 85, 247], Organic: [180, 83, 9],
+      Paper: [37, 99, 235], Metal: [107, 114, 128], Electronic: [239, 68, 68], 'Mixed Waste': [13, 148, 136]
+    };
+    const grey: [number, number, number] = [100, 116, 139];
+    const dark: [number, number, number] = [15, 23, 42];
+
+    const wrapText = (text: string, maxWidth: number): string[] => {
+      const words = String(text).split(' ');
+      const lines: string[] = [];
+      let line = '';
+      for (const word of words) {
+        const test = line ? `${line} ${word}` : word;
+        if (doc.getTextWidth(test) > maxWidth && line) {
+          lines.push(line);
+          line = word;
+        } else line = test;
+      }
+      if (line) lines.push(line);
+      return lines.length ? lines : [''];
+    };
+
+    // ── Header ──
+    let y = 16;
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, W, 30, 'F');
+    doc.setFillColor(34, 197, 94);
+    doc.rect(0, 30, W, 1.6, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10);
+    doc.text('UNIVERSITY OF CROSS RIVER STATE', W / 2, 11, { align: 'center' });
+    doc.setFontSize(16);
+    doc.text('CAMPUS WASTE MANAGEMENT SYSTEM', W / 2, 18, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text('Incidents Registry & Archive Report', W / 2, 24, { align: 'center' });
+
+    y = 40;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...dark);
+    doc.text('Report Summary', M, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...grey);
+    const generated = `Generated: ${new Date().toLocaleString()}`;
+    doc.text(generated, W - M, y, { align: 'right' });
+    y += 6;
+
+    const statusMap = new Map<string, number>();
+    rows.forEach(r => statusMap.set(r.status, (statusMap.get(r.status) || 0) + 1));
+    const statuses = ['Pending', 'Assigned', 'In Progress', 'Completed'];
+    const counts = statuses.map(s => ({ s, c: statusMap.get(s) || 0 }));
+    autoTable(doc, {
+      startY: y,
+      margin: { left: M, right: M },
+      head: [['Total Records', ...statuses.map(s => `${s} (${statusMap.get(s) || 0})`)]],
+      body: [[String(rows.length), ...counts.map(ct => `${Math.round((ct.c / (rows.length || 1)) * 100)}%`)]],
+      theme: 'grid',
+      styles: { fontSize: 9, halign: 'center', textColor: dark, lineColor: [226, 232, 240], lineWidth: 0.2 },
+      headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold' },
+      columnStyles: { 0: { halign: 'left', fontStyle: 'bold' } }
+    });
+    y = (doc as any).lastAutoTable.finalY + 10;
+
+    // ── Record cards ──
+    if (rows.length === 0) {
+      doc.setFontSize(11);
+      doc.setTextColor(...grey);
+      doc.text('No archive records to export.', W / 2, 80, { align: 'center' });
+    }
+
+    let page = 1;
+    const pageFooter = () => {
+      const total = doc.getNumberOfPages();
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(...grey);
+      doc.text(`UNICROSS OCWMS  |  Page ${page} of ${total}`, W / 2, H - 8, { align: 'center' });
+    };
+
+    for (const r of rows) {
+      const catCol = CATEGORY_COLORS[r.category] || CATEGORY_COLORS['Mixed Waste'];
+      const cardH = 44;
+
+      // page break check
+      if (y + cardH > H - 18) {
+        pageFooter();
+        doc.addPage();
+        page++;
+        y = 18;
+      }
+
+      // ── Card band ──
+      doc.setFillColor(...dark);
+      doc.roundedRect(M, y, CW, 9, 1.2, 1.2, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(255, 255, 255);
+      doc.text(r.id, M + 4, y + 6);
+      doc.setFontSize(8.5);
+      doc.text(`Priority: ${r.priority}`, M + 45, y + 6);
+      // category chip
+      doc.setFillColor(...catCol);
+      doc.roundedRect(W - M - 52, y + 1.5, 48, 6, 1, 1, 'F');
+      doc.setFontSize(8.5);
+      doc.text(r.category.toUpperCase(), W - M - 28, y + 5.7, { align: 'center' });
+      y += 9;
+
+      // ── Card body ──
+      const bodyLeft = M;
+      const colW = CW / 2 - 3;
+      const paintPair = (label: string, value: string, x: number, yy: number, w: number) => {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(...grey);
+        doc.text(label.toUpperCase(), x, yy);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9.5);
+        doc.setTextColor(...dark);
+        const wrapped = wrapText(value, w);
+        wrapped.slice(0, 2).forEach((ln, i) => doc.text(ln, x, yy + 4.5 + i * 4.2));
+        return Math.max(0, wrapped.length - 2);
+      };
+
+      const overflowL1 = paintPair('Location', r.location, bodyLeft, y + 5, colW - 2);
+      const overflowL2 = paintPair('Reported By', r.reporter, bodyLeft + colW + 6, y + 5, colW - 2);
+      const overflowL3 = paintPair('Submitted', r.date, bodyLeft, y + 16, colW - 2);
+      const overflowL4 = paintPair('Status', r.status, bodyLeft + colW + 6, y + 16, colW - 2);
+      const maxOverflow = Math.max(overflowL1, overflowL2, overflowL3, overflowL4);
+
+      const descY = y + 27 + maxOverflow * 4.2;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(...grey);
+      doc.text('DESCRIPTION', bodyLeft, descY);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(...dark);
+      const descLines = wrapText(r.description, CW - 4).slice(0, 3);
+      descLines.forEach((ln, i) => doc.text(ln, bodyLeft, descY + 4.5 + i * 4.2));
+
+      const right = M + CW;
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.2);
+      doc.line(M, descY + 16.5 + (descLines.length - 1) * 4.2, right, descY + 16.5 + (descLines.length - 1) * 4.2);
+
+      y = descY + 18 + (descLines.length - 1) * 4.2;
+    }
+
+    pageFooter();
+    doc.save(`UNICROSS_Sanitation_Manifest_${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
+
+  const triggerExport = (format: 'PDF' | 'Excel') => {
+    const rows = exportRows();
+    const stamp = new Date().toISOString().slice(0, 10);
+    if (format === 'PDF') {
+      buildSanitationPdf(rows);
+    } else {
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws['!cols'] = [{ wch: 10 }, { wch: 14 }, { wch: 28 }, { wch: 40 }, { wch: 10 }, { wch: 12 }, { wch: 18 }, { wch: 12 }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Sanitation Records');
+      XLSX.writeFile(wb, `UNICROSS_Sanitation_Manifest_${stamp}.xlsx`);
+    }
+    setExportBanner(`Downloaded ${rows.length} record(s) as .${format === 'PDF' ? 'pdf' : 'xlsx'}`);
+    setTimeout(() => setExportBanner(null), 4000);
   };
 
   const unreadNotificationsCount = notifications.filter(n => !n.read).length;
@@ -232,19 +492,21 @@ export default function App() {
     <div>
       {viewState === 'landing' && (
         <LandingPage
-          onNavigateToLogin={() => { setViewState('auth'); setAuthMode('login'); }}
-          onNavigateToRegister={() => { setViewState('auth'); setAuthMode('register'); }}
-          onQuickLogin={(role) => handleLogin(MOCK_EMAILS[role], role)}
+          onNavigateToLogin={() => goToPortal('student', 'login')}
+          onNavigateToRegister={() => goToPortal('student', 'register')}
+          onQuickLogin={(role) => goToPortal(role, 'login')}
         />
       )}
 
       {viewState === 'auth' && (
         <AuthScreens
           mode={authMode}
+          portalRole={portalRole || 'student'}
+          onChangePortal={goToPortal}
           onSwitchMode={setAuthMode}
           onLogin={(email, role) => handleLogin(email, role)}
           onRegister={(data) => handleRegister(data)}
-          onBackToLanding={() => setViewState('landing')}
+          onBackToLanding={goToLanding}
         />
       )}
 
@@ -255,7 +517,6 @@ export default function App() {
           activeTab={activeTab}
           onNavigateTab={(tab) => { setActiveTab(tab); setSelectedReport(null); }}
           unreadNotificationsCount={unreadNotificationsCount}
-          onToggleRoleBypass={handleToggleRoleBypass}
         >
           {selectedReport ? (
             <ReportDetails
@@ -336,8 +597,8 @@ export default function App() {
                       <p className="text-sm text-slate-500 mt-1">Durable query system mapping comprehensive campus sanitation files.</p>
                     </div>
                     <div className="flex gap-2.5 text-xs font-bold">
-                      <button onClick={() => triggerMockExport('PDF')} className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-lg transition flex items-center gap-1.5"><Download className="h-4 w-4" /> Export PDF</button>
-                      <button onClick={() => triggerMockExport('Excel')} className="px-4 py-2.5 bg-white text-slate-800 hover:bg-slate-50 border border-slate-250 rounded-xl shadow-sm transition flex items-center gap-1.5"><FileText className="h-4 w-4 text-green-600" /> Export Excel</button>
+                      <button onClick={() => triggerExport('PDF')} className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-lg transition flex items-center gap-1.5"><Download className="h-4 w-4" /> Export PDF</button>
+                      <button onClick={() => triggerExport('Excel')} className="px-4 py-2.5 bg-white text-slate-800 hover:bg-slate-50 border border-slate-250 rounded-xl shadow-sm transition flex items-center gap-1.5"><FileText className="h-4 w-4 text-green-600" /> Export Excel</button>
                     </div>
                   </div>
                   {exportBanner && <div className="p-4 bg-blue-50 text-blue-800 rounded-2xl text-xs font-bold animate-pulse">{exportBanner}</div>}

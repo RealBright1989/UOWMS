@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { 
   ArrowLeft, Clock, MapPin, User, AlertTriangle, 
-  Send, MessageSquare, CheckCircle, ShieldAlert, Sparkles 
+  Send, MessageSquare, CheckCircle, ShieldAlert, Sparkles,
+  Camera, Check
 } from 'lucide-react';
 import { WasteReport, UserRole, Comment } from '../types';
 
@@ -11,7 +12,7 @@ interface ReportDetailsProps {
   userName: string;
   onBack: () => void;
   onAddComment: (reportId: string, text: string) => void;
-  onUpdateStatus?: (reportId: string, status: WasteReport['status']) => void;
+  onUpdateStatus?: (reportId: string, status: WasteReport['status'], resolutionImage?: string) => void;
   onAssignStaff?: (reportId: string, staffId: string, staffName: string) => void;
   staffList?: { id: string; name: string }[];
 }
@@ -28,6 +29,16 @@ export default function ReportDetails({
 }: ReportDetailsProps) {
   const [commentText, setCommentText] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
+  const [resPhoto, setResPhoto] = useState<string | null>(null);
+
+  const handleResPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => setResPhoto(reader.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
 
   const handleCommentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -293,13 +304,47 @@ export default function ReportDetails({
                 )}
                 
                 {report.status === 'In Progress' && (
-                  <button
-                    id="staff-btn-complete"
-                    onClick={() => onUpdateStatus(report.id, 'Completed')}
-                    className="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5"
-                  >
-                    Mark Cleanup as Completed ✓
-                  </button>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <label
+                        htmlFor="detail-res-photo"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl cursor-pointer transition"
+                      >
+                        <Camera className="h-4 w-4" />
+                        {resPhoto ? 'Retake / Change Photo' : 'Take or Upload Photo'}
+                      </label>
+                      <input
+                        id="detail-res-photo"
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleResPhotoUpload}
+                        className="hidden"
+                      />
+                      {resPhoto ? (
+                        <div className="flex items-center gap-2">
+                          <div className="relative w-14 h-14 rounded-xl overflow-hidden border-2 border-green-600 shrink-0">
+                            <img src={resPhoto} alt="resolution evidence" className="w-full h-full object-cover" />
+                            <span className="absolute bottom-0.5 right-0.5 bg-green-600 text-white p-0.5 rounded-full">
+                              <Check className="h-3 w-3" />
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-bold text-green-400 uppercase tracking-wider">Evidence Attached</span>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-slate-400">A real cleanup photo is required to complete.</span>
+                      )}
+                    </div>
+                    <button
+                      id="staff-btn-complete"
+                      disabled={!resPhoto}
+                      onClick={() => onUpdateStatus(report.id, 'Completed', resPhoto || undefined)}
+                      className="w-full py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      Mark Cleanup as Completed
+                    </button>
+                  </div>
                 )}
               </div>
             </div>

@@ -1,17 +1,116 @@
 import React, { useState } from 'react';
-import { Trash2, ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Camera, CheckCircle2, Sparkles, ShieldCheck, HardHat, GraduationCap } from 'lucide-react';
 import { UserRole, FACULTIES } from '../types';
 import UnicrossLogo from './UnicrossLogo';
 
 interface AuthScreensProps {
   mode: 'login' | 'register';
+  portalRole: UserRole;
+  onChangePortal: (role: UserRole) => void;
   onSwitchMode: (mode: 'login' | 'register') => void;
   onLogin: (email: string, role: UserRole) => void;
   onRegister: (data: any) => void;
   onBackToLanding: () => void;
 }
 
-export default function AuthScreens({ mode, onSwitchMode, onLogin, onRegister, onBackToLanding }: AuthScreensProps) {
+const PORTALS: Record<UserRole, {
+  label: string;
+  tagline: string;
+  person: string;
+  email: string;
+  gradient: string;
+  glow: string;
+  accent: string;
+  chip: string;
+  chipSolid: string;
+  btn: string;
+  ring: string;
+  tabActive: string;
+  cta: string;
+  heading: string;
+  blurb: string;
+  feature1: [string, string];
+  feature2: [string, string];
+  stat1: [string, string];
+  stat2: [string, string];
+  stat3: [string, string];
+  icon: React.ElementType;
+}> = {
+  student: {
+    label: 'Student Portal',
+    tagline: 'Report waste, track your submissions',
+    person: 'Bright Okon',
+    email: 'brightokon444@gmail.com',
+    gradient: 'from-green-950 via-emerald-900 to-slate-950',
+    glow: 'bg-green-500/10',
+    accent: 'text-green-400',
+    chip: 'bg-green-500/10 text-green-400',
+    chipSolid: 'bg-green-500/20 text-green-400',
+    btn: 'bg-green-600 hover:bg-green-700',
+    ring: 'focus:border-green-500',
+    tabActive: 'bg-green-600 text-white',
+    cta: 'Enter Student Portal',
+    heading: 'Report Waste & Track Progress',
+    blurb: 'File waste incidents with AI classification, follow your submissions through every cleanup stage, and stay accountable to a greener campus.',
+    feature1: ['Instant AI Classification', 'Photograph any waste and the system identifies the category instantly.'],
+    feature2: ['Live Cleanup Tracking', 'Watch your report move from Pending to Assigned to Completed.'],
+    stat1: ['< 30 sec', 'To file a report'],
+    stat2: ['4 hrs', 'Avg cleanup time'],
+    stat3: ['100%', 'Accountability'],
+    icon: GraduationCap
+  },
+  staff: {
+    label: 'Sanitation Staff Portal',
+    tagline: 'Field operations and dispatch',
+    person: 'Emeka Obi',
+    email: 'emeka.obi@unicross.edu.ng',
+    gradient: 'from-blue-950 via-slate-900 to-slate-950',
+    glow: 'bg-blue-500/10',
+    accent: 'text-blue-400',
+    chip: 'bg-blue-500/10 text-blue-400',
+    chipSolid: 'bg-blue-500/20 text-blue-400',
+    btn: 'bg-blue-600 hover:bg-blue-700',
+    ring: 'focus:border-blue-500',
+    tabActive: 'bg-blue-600 text-white',
+    cta: 'Enter Field Console',
+    heading: 'Execute & Document Cleanups',
+    blurb: 'Receive dispatched cleanup tasks, accept them on the ground, and close each case with photographic proof of completion.',
+    feature1: ['Dispatched Task Queue', 'Only the cleanups actually allocated to you, nothing else.'],
+    feature2: ['Photo Evidence Closure', 'Resolve a case only after uploading completion proof.'],
+    stat1: ['2.4 hrs', 'Avg completion'],
+    stat2: ['Class A', 'Operational tier'],
+    stat3: ['Live', 'Duty status'],
+    icon: HardHat
+  },
+  admin: {
+    label: 'Administrator Console',
+    tagline: 'Campus-wide oversight and analytics',
+    person: 'Prof Florence',
+    email: 'florence.effiong@unicross.edu.ng',
+    gradient: 'from-violet-950 via-slate-900 to-slate-950',
+    glow: 'bg-violet-500/10',
+    accent: 'text-violet-400',
+    chip: 'bg-violet-500/10 text-violet-400',
+    chipSolid: 'bg-violet-500/20 text-violet-400',
+    btn: 'bg-violet-600 hover:bg-violet-700',
+    ring: 'focus:border-violet-500',
+    tabActive: 'bg-violet-600 text-white',
+    cta: 'Enter Administrator Console',
+    heading: 'Govern the Whole Operation',
+    blurb: 'Dispatch officers to incidents, manage the user directory, monitor campus-wide waste trends and audit every action taken on the system.',
+    feature1: ['Officer Dispatch Control', 'Allocate field crews to pending incidents in one click.'],
+    feature2: ['Full Audit Trail', 'Every action recorded with actor, role and timestamp.'],
+    stat1: ['28k+', 'Tons collected'],
+    stat2: ['1,580', 'Smart bins'],
+    stat3: ['99%', 'Efficiency'],
+    icon: ShieldCheck
+  }
+};
+
+export default function AuthScreens({ mode, portalRole, onChangePortal, onSwitchMode, onLogin, onRegister, onBackToLanding }: AuthScreensProps) {
+  const portal = PORTALS[portalRole];
+  const canRegister = portalRole === 'student';
+
   // Login State
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,6 +127,18 @@ export default function AuthScreens({ mode, onSwitchMode, onLogin, onRegister, o
   const [regPassword, setRegPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [regError, setRegError] = useState('');
+  const [passportPhoto, setPassportPhoto] = useState<string | null>(null);
+
+  const handlePassportUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => setPassportPhoto(reader.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const showLogin = mode === 'login' || !canRegister;
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,15 +146,18 @@ export default function AuthScreens({ mode, onSwitchMode, onLogin, onRegister, o
       setLoginError('Please enter your university email directory.');
       return;
     }
-    // Simple mock routing based on email patterns to switch roles automatically
-    const trimmedEmail = email.toLowerCase().trim();
-    if (trimmedEmail.includes('admin') || trimmedEmail === 'florence.effiong@unicross.edu.ng') {
-      onLogin(trimmedEmail, 'admin');
-    } else if (trimmedEmail.includes('staff') || trimmedEmail === 'emeka.obi@unicross.edu.ng' || trimmedEmail === 'asari.bassey@unicross.edu.ng') {
-      onLogin(trimmedEmail, 'staff');
-    } else {
-      onLogin(trimmedEmail, 'student'); // Default to student
-    }
+    // The portal decides the role - no cross-role guessing.
+    onLogin(email.toLowerCase().trim(), portalRole);
+  };
+
+  const handleQuickLogin = () => {
+    // Honour whatever the user typed so we never silently sign in as the
+    // wrong person (e.g. the staff demo default) instead of the typed account.
+    const target = email.trim() ? email.toLowerCase().trim() : portal.email;
+    setEmail(target);
+    setPassword('password');
+    setRememberMe(true);
+    onLogin(target, portalRole);
   };
 
   const handleRegisterSubmit = (e: React.FormEvent) => {
@@ -56,9 +170,14 @@ export default function AuthScreens({ mode, onSwitchMode, onLogin, onRegister, o
       setRegError('Passwords do not match.');
       return;
     }
-    
+    if (!passportPhoto) {
+      setRegError('Please upload your passport photograph before continuing.');
+      return;
+    }
+
     onRegister({
       name: fullName,
+      avatar: passportPhoto,
       matricNumber,
       email,
       phoneNumber: phone,
@@ -69,117 +188,123 @@ export default function AuthScreens({ mode, onSwitchMode, onLogin, onRegister, o
     });
   };
 
+  const PortalIcon = portal.icon;
+
   return (
     <div className="min-h-screen bg-slate-900 grid grid-cols-1 lg:grid-cols-12 font-sans overflow-hidden">
-      
-      {/* Left Column: Premium Interactive Campus Illustration Mock */}
-      <div className="hidden lg:flex lg:col-span-5 bg-gradient-to-br from-green-950 via-emerald-900 to-slate-950 p-12 flex-col justify-between relative overflow-hidden">
-        {/* Abstract vector orbits */}
-        <div className="absolute top-0 right-0 w-80 h-80 bg-green-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+      {/* Left Column: Role-branded panel */}
+      <div className={`hidden lg:flex lg:col-span-5 bg-gradient-to-br ${portal.gradient} p-12 flex-col justify-between relative overflow-hidden`}>
+        <div className={`absolute top-0 right-0 w-80 h-80 ${portal.glow} rounded-full blur-3xl pointer-events-none`} />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
         {/* Top brand */}
         <div className="flex items-center gap-3.5 z-10 cursor-pointer" onClick={onBackToLanding}>
           <UnicrossLogo size="sm" className="h-12 w-12 shrink-0 bg-white p-1 rounded-xl shadow-lg" />
           <div>
             <p className="font-black text-white text-lg tracking-tight">UNICROSS OCWMS</p>
-            <p className="text-[10px] text-green-400 font-mono tracking-widest uppercase">Safe Campus Haven</p>
+            <p className={`text-[10px] ${portal.accent} font-mono tracking-widest uppercase`}>{portal.label}</p>
           </div>
         </div>
 
         {/* Center content */}
         <div className="space-y-6 z-10 max-w-sm">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-500/15 border border-green-500/20 rounded-full text-xs font-semibold text-green-400">
-            <Sparkles className="h-3 w-3" />
-            <span>Digital Sanitation Initiative</span>
+          <div className={`inline-flex items-center gap-2 px-3 py-1 border rounded-full text-xs font-semibold ${portal.chipSolid}`}>
+            <PortalIcon className="h-3 w-3" />
+            <span>{portal.tagline}</span>
           </div>
           <h2 className="text-3xl font-extrabold text-white tracking-tight leading-tight">
-            Elevating UNICROSS Hygiene & Environmental Sustainability.
+            {portal.heading}
           </h2>
           <p className="text-xs text-slate-300 leading-relaxed">
-            Report broken pipes, plastic build-ups, chemical leaks, and general campus waste directly to environmental teams with smart geolocation and instant AI feedback channels.
+            {portal.blurb}
           </p>
 
           <div className="space-y-3.5 pt-4">
             <div className="flex items-start gap-3">
-              <span className="p-1 bg-green-500/20 text-green-400 rounded-lg text-xs mt-0.5 font-bold">✓</span>
+              <span className={`p-1 ${portal.chipSolid} rounded-lg text-xs mt-0.5 font-bold`}>✓</span>
               <div>
-                <p className="text-xs font-bold text-slate-100">Clean Classrooms & Hostels</p>
-                <p className="text-[11px] text-slate-400">Report in under 30 seconds straight from lecture halls.</p>
+                <p className="text-xs font-bold text-slate-100">{portal.feature1[0]}</p>
+                <p className="text-[11px] text-slate-400">{portal.feature1[1]}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <span className="p-1 bg-green-500/20 text-green-400 rounded-lg text-xs mt-0.5 font-bold">✓</span>
+              <span className={`p-1 ${portal.chipSolid} rounded-lg text-xs mt-0.5 font-bold`}>✓</span>
               <div>
-                <p className="text-xs font-bold text-slate-100">Live Collection Map</p>
-                <p className="text-[11px] text-slate-400">Track sanitation dispatch trucks with turn-oriented statuses.</p>
+                <p className="text-xs font-bold text-slate-100">{portal.feature2[0]}</p>
+                <p className="text-[11px] text-slate-400">{portal.feature2[1]}</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Bottom stats inside illustration column */}
+        {/* Bottom stats */}
         <div className="border-t border-slate-800 pt-6 z-10">
           <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-2">Campus Statistics</p>
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <p className="text-lg font-black text-white">100%</p>
-              <p className="text-[9px] text-slate-400">Accountability</p>
+              <p className="text-lg font-black text-white">{portal.stat1[0]}</p>
+              <p className="text-[9px] text-slate-400">{portal.stat1[1]}</p>
             </div>
             <div>
-              <p className="text-lg font-black text-white">&lt; 4 Hours</p>
-              <p className="text-[9px] text-slate-400">Average Cleanup</p>
+              <p className="text-lg font-black text-white">{portal.stat2[0]}</p>
+              <p className="text-[9px] text-slate-400">{portal.stat2[1]}</p>
             </div>
             <div>
-              <p className="text-lg font-black text-white">9k+ kg</p>
-              <p className="text-[9px] text-slate-400">Composted Organics</p>
+              <p className="text-lg font-black text-white">{portal.stat3[0]}</p>
+              <p className="text-[9px] text-slate-400">{portal.stat3[1]}</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Right Column: Interactive Login/Register Form Workspace */}
+      {/* Right Column: Login / Register workspace */}
       <div className="lg:col-span-7 flex items-center justify-center p-6 md:p-12 bg-slate-900 relative">
-        <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className={`absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-96 ${portal.glow} rounded-full blur-3xl pointer-events-none`} />
 
         <div className="w-full max-w-lg bg-slate-800/45 border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl backdrop-blur-md relative overflow-hidden">
-          
-          {/* Circular accents in the card */}
-          <div className="absolute -top-10 -right-10 w-32 h-32 bg-green-500/5 rounded-full blur-2xl pointer-events-none" />
 
-          {/* Header switch buttons */}
+          <div className={`absolute -top-10 -right-10 w-32 h-32 ${portal.glow} rounded-full blur-2xl pointer-events-none`} />
+
+          {/* Header: back + login/register toggle */}
           <div className="flex justify-between items-center mb-6">
-            <button 
+            <button
               id="switch-btn-back"
               onClick={onBackToLanding}
               className="text-xs text-slate-400 hover:text-white transition flex items-center gap-1.5"
             >
               ← Back to site
             </button>
-            <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
-              <button
-                id="tab-select-login"
-                onClick={() => { onSwitchMode('login'); setLoginError(''); setRegError(''); }}
-                className={`px-4 py-1.5 rounded-lg font-semibold transition ${mode === 'login' ? 'bg-green-600 text-white' : 'text-slate-400 hover:text-white'}`}
-              >
-                Sign In
-              </button>
-              <button
-                id="tab-select-register"
-                onClick={() => { onSwitchMode('register'); setLoginError(''); setRegError(''); }}
-                className={`px-4 py-1.5 rounded-lg font-semibold transition ${mode === 'register' ? 'bg-green-600 text-white' : 'text-slate-400 hover:text-white'}`}
-              >
-                Register
-              </button>
-            </div>
+            {canRegister ? (
+              <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
+                <button
+                  id="tab-select-login"
+                  onClick={() => { onSwitchMode('login'); setLoginError(''); setRegError(''); }}
+                  className={`px-4 py-1.5 rounded-lg font-semibold transition ${mode === 'login' ? portal.tabActive : 'text-slate-400 hover:text-white'}`}
+                >
+                  Sign In
+                </button>
+                <button
+                  id="tab-select-register"
+                  onClick={() => { onSwitchMode('register'); setLoginError(''); setRegError(''); }}
+                  className={`px-4 py-1.5 rounded-lg font-semibold transition ${mode === 'register' ? portal.tabActive : 'text-slate-400 hover:text-white'}`}
+                >
+                  Register
+                </button>
+              </div>
+            ) : (
+              <span className={`px-3 py-1.5 rounded-xl border text-[10px] font-bold uppercase tracking-widest ${portal.chip}`}>
+                {portal.label}
+              </span>
+            )}
           </div>
 
           {/* LOGIN VIEW */}
-          {mode === 'login' ? (
+          {showLogin ? (
             <div className="space-y-6">
               <div>
-                <h3 className="text-2xl font-black text-white tracking-tight">Access Campus Dashboard</h3>
-                <p className="text-xs text-slate-400 mt-1">Sign in using your authorized UNICROSS student or staff directory credentials.</p>
+                <h3 className="text-2xl font-black text-white tracking-tight">{portal.label}</h3>
+                <p className="text-xs text-slate-400 mt-1">Sign in with your authorised {portalRole} directory credentials.</p>
               </div>
 
               {loginError && (
@@ -195,17 +320,17 @@ export default function AuthScreens({ mode, onSwitchMode, onLogin, onRegister, o
                   <input
                     id="login-email"
                     type="email"
-                    placeholder="student@student.unicross.edu.ng"
+                    placeholder={portal.email}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-900 border border-slate-800 text-sm text-white rounded-xl focus:border-green-500 focus:outline-none transition"
+                    className={`w-full px-4 py-3 bg-slate-900 border border-slate-800 text-sm text-white rounded-xl focus:outline-none transition ${portal.ring}`}
                   />
                 </div>
 
                 <div className="space-y-1.5">
                   <div className="flex justify-between">
                     <label htmlFor="login-pass" className="text-xs font-semibold text-slate-300">Account Password</label>
-                    <button type="button" className="text-xs text-green-400 hover:underline">Forgot password?</button>
+                    <button type="button" className={`text-xs hover:underline ${portal.accent}`}>Forgot password?</button>
                   </div>
                   <input
                     id="login-pass"
@@ -213,7 +338,7 @@ export default function AuthScreens({ mode, onSwitchMode, onLogin, onRegister, o
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-900 border border-slate-800 text-sm text-white rounded-xl focus:border-green-500 focus:outline-none transition"
+                    className={`w-full px-4 py-3 bg-slate-900 border border-slate-800 text-sm text-white rounded-xl focus:outline-none transition ${portal.ring}`}
                   />
                 </div>
 
@@ -224,7 +349,7 @@ export default function AuthScreens({ mode, onSwitchMode, onLogin, onRegister, o
                       type="checkbox"
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
-                      className="rounded bg-slate-900 border-slate-800 text-green-600 focus:ring-0 w-4 h-4"
+                      className="rounded bg-slate-900 border-slate-800 focus:ring-0 w-4 h-4"
                     />
                     <span>Remember this session</span>
                   </label>
@@ -233,67 +358,36 @@ export default function AuthScreens({ mode, onSwitchMode, onLogin, onRegister, o
                 <button
                   id="btn-submit-login"
                   type="submit"
-                  className="w-full py-3.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl mt-2 transition text-sm flex items-center justify-center gap-2"
+                  className={`w-full py-3.5 text-white font-bold rounded-xl mt-2 transition text-sm flex items-center justify-center gap-2 ${portal.btn}`}
                 >
-                  Enter Operational Panel
+                  {portal.cta}
                   <ArrowRight className="h-4 w-4" />
                 </button>
               </form>
 
-              {/* Instant profile selector shortcuts */}
+              {/* Quick access for THIS role only */}
               <div className="border-t border-slate-800 pt-6 mt-4">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3.5 text-center">
-                  Quick Access Profiles (Evaluator Sandbox)
+                  Evaluator Sandbox - {portal.label}
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <button 
-                    id="shortcut-student"
+                <div className="grid grid-cols-1 gap-2">
+                  <button
+                    id={`shortcut-${portalRole}`}
                     type="button"
-                    onClick={() => {
-                      setEmail('brightokon444@gmail.com');
-                      setPassword('password');
-                      setRememberMe(true);
-                      // Auto triggering the submit logic
-                      onLogin('brightokon444@gmail.com', 'student');
-                    }}
-                    className="p-2 sm:p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl transition text-left flex flex-col justify-between"
+                    onClick={handleQuickLogin}
+                    className={`p-3 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl transition text-left flex items-center justify-between`}
                   >
-                    <span className="text-[10px] bg-green-500/10 text-green-400 px-1.5 py-0.5 rounded font-mono font-black uppercase">STUDENT</span>
-                    <span className="text-[11px] font-bold text-slate-200 mt-1 truncate">Bright Okon</span>
-                  </button>
-                  <button 
-                    id="shortcut-staff"
-                    type="button"
-                    onClick={() => {
-                      setEmail('emeka.obi@unicross.edu.ng');
-                      setPassword('password');
-                      setRememberMe(true);
-                      onLogin('emeka.obi@unicross.edu.ng', 'staff');
-                    }}
-                    className="p-2 sm:p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl transition text-left flex flex-col justify-between"
-                  >
-                    <span className="text-[10px] bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded font-mono font-black uppercase">STAFF</span>
-                    <span className="text-[11px] font-bold text-slate-200 mt-1 truncate">Emeka Obi</span>
-                  </button>
-                  <button 
-                    id="shortcut-admin"
-                    type="button"
-                    onClick={() => {
-                      setEmail('florence.effiong@unicross.edu.ng');
-                      setPassword('password');
-                      setRememberMe(true);
-                      onLogin('florence.effiong@unicross.edu.ng', 'admin');
-                    }}
-                    className="p-2 sm:p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl transition text-left flex flex-col justify-between"
-                  >
-                    <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-black uppercase">ADMIN</span>
-                    <span className="text-[11px] font-bold text-slate-200 mt-1 truncate">Prof Florence</span>
+                    <div>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-black uppercase ${portal.chip}`}>{portalRole}</span>
+                      <span className="text-[11px] font-bold text-slate-200 mt-1 block">{portal.person}</span>
+                    </div>
+                    <span className="text-[10px] text-slate-500 font-mono">{portal.email}</span>
                   </button>
                 </div>
               </div>
             </div>
           ) : (
-            // REGISTER VIEW WITH UNIVERSITY HOSTEL AND DEPT FIELDS
+            // REGISTER VIEW (student portal only)
             <div className="space-y-6">
               <div>
                 <h3 className="text-2xl font-black text-white tracking-tight">Create Student Account</h3>
@@ -308,7 +402,44 @@ export default function AuthScreens({ mode, onSwitchMode, onLogin, onRegister, o
               )}
 
               <form onSubmit={handleRegisterSubmit} className="space-y-4 max-h-[420px] overflow-y-auto pr-2 custom-scrollbar">
-                
+
+                {/* Passport photograph upload */}
+                <div className="flex items-center gap-4 p-3 bg-slate-900 border border-slate-800 rounded-xl">
+                  <label htmlFor="reg-passport" className="cursor-pointer shrink-0">
+                    {passportPhoto ? (
+                      <img src={passportPhoto} alt="passport" className="w-16 h-20 object-cover rounded-lg border-2 border-green-500" />
+                    ) : (
+                      <div className="w-16 h-20 rounded-lg border-2 border-dashed border-slate-700 flex flex-col items-center justify-center text-slate-500">
+                        <Camera className="h-5 w-5" />
+                      </div>
+                    )}
+                  </label>
+                  <div className="text-left min-w-0">
+                    <p className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                      Passport Photograph
+                      {passportPhoto && <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />}
+                    </p>
+                    <p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed">
+                      Attach a clear passport photo. It will be displayed beside your name across all dashboards and reports.
+                    </p>
+                    <label
+                      htmlFor="reg-passport"
+                      className={`inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold rounded-lg cursor-pointer transition ${portal.ring}`}
+                    >
+                      <Camera className="h-3.5 w-3.5" />
+                      {passportPhoto ? 'Retake / Change Photo' : 'Upload or Take Photo'}
+                    </label>
+                  </div>
+                  <input
+                    id="reg-passport"
+                    type="file"
+                    accept="image/*"
+                    capture="user"
+                    onChange={handlePassportUpload}
+                    className="hidden"
+                  />
+                </div>
+
                 <div className="space-y-1.5">
                   <label htmlFor="reg-name" className="text-xs font-semibold text-slate-300">Full Legal Name</label>
                   <input
@@ -318,7 +449,7 @@ export default function AuthScreens({ mode, onSwitchMode, onLogin, onRegister, o
                     placeholder="e.g. Bright Okon"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="w-full px-4 py-2 bg-slate-900 border border-slate-800 text-sm text-white rounded-xl focus:border-green-500 focus:outline-none transition"
+                    className={`w-full px-4 py-2 bg-slate-900 border border-slate-800 text-sm text-white rounded-xl focus:outline-none transition ${portal.ring}`}
                   />
                 </div>
 
@@ -332,7 +463,7 @@ export default function AuthScreens({ mode, onSwitchMode, onLogin, onRegister, o
                       placeholder="U/2021/ENG/0441"
                       value={matricNumber}
                       onChange={(e) => setMatricNumber(e.target.value)}
-                      className="w-full px-4 py-2 bg-slate-900 border border-slate-800 text-sm text-white rounded-xl focus:border-green-500 focus:outline-none transition"
+                      className={`w-full px-4 py-2 bg-slate-900 border border-slate-800 text-sm text-white rounded-xl focus:outline-none transition ${portal.ring}`}
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -343,7 +474,7 @@ export default function AuthScreens({ mode, onSwitchMode, onLogin, onRegister, o
                       placeholder="+234 812 345 6789"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="w-full px-4 py-2 bg-slate-900 border border-slate-800 text-sm text-white rounded-xl focus:border-green-500 focus:outline-none transition"
+                      className={`w-full px-4 py-2 bg-slate-900 border border-slate-800 text-sm text-white rounded-xl focus:outline-none transition ${portal.ring}`}
                     />
                   </div>
                 </div>
@@ -357,7 +488,7 @@ export default function AuthScreens({ mode, onSwitchMode, onLogin, onRegister, o
                     placeholder="student@student.unicross.edu.ng"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-2 bg-slate-900 border border-slate-800 text-sm text-white rounded-xl focus:border-green-500 focus:outline-none transition"
+                    className={`w-full px-4 py-2 bg-slate-900 border border-slate-800 text-sm text-white rounded-xl focus:outline-none transition ${portal.ring}`}
                   />
                 </div>
 
@@ -368,7 +499,7 @@ export default function AuthScreens({ mode, onSwitchMode, onLogin, onRegister, o
                       id="reg-faculty"
                       value={faculty}
                       onChange={(e) => setFaculty(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 text-xs text-white rounded-xl focus:border-green-500 focus:outline-none transition"
+                      className={`w-full px-3 py-2 bg-slate-900 border border-slate-800 text-xs text-white rounded-xl focus:outline-none transition ${portal.ring}`}
                     >
                       {FACULTIES.map(f => (
                         <option key={f} value={f}>{f}</option>
@@ -383,7 +514,7 @@ export default function AuthScreens({ mode, onSwitchMode, onLogin, onRegister, o
                       placeholder="e.g. Civil Engineering"
                       value={department}
                       onChange={(e) => setDepartment(e.target.value)}
-                      className="w-full px-4 py-2 bg-slate-900 border border-slate-800 text-sm text-white rounded-xl focus:border-green-500 focus:outline-none transition"
+                      className={`w-full px-4 py-2 bg-slate-900 border border-slate-800 text-sm text-white rounded-xl focus:outline-none transition ${portal.ring}`}
                     />
                   </div>
                 </div>
@@ -396,7 +527,7 @@ export default function AuthScreens({ mode, onSwitchMode, onLogin, onRegister, o
                     placeholder="e.g. Hostel Block C, Room 14"
                     value={hostel}
                     onChange={(e) => setHostel(e.target.value)}
-                    className="w-full px-4 py-2 bg-slate-900 border border-slate-800 text-xs text-white rounded-xl focus:border-green-500 focus:outline-none transition animate-pulse"
+                    className={`w-full px-4 py-2 bg-slate-900 border border-slate-800 text-xs text-white rounded-xl focus:outline-none transition animate-pulse ${portal.ring}`}
                   />
                 </div>
 
@@ -410,7 +541,7 @@ export default function AuthScreens({ mode, onSwitchMode, onLogin, onRegister, o
                       placeholder="••••••••"
                       value={regPassword}
                       onChange={(e) => setRegPassword(e.target.value)}
-                      className="w-full px-4 py-2 bg-slate-900 border border-slate-800 text-sm text-white rounded-xl focus:border-green-500 focus:outline-none transition"
+                      className={`w-full px-4 py-2 bg-slate-900 border border-slate-800 text-sm text-white rounded-xl focus:outline-none transition ${portal.ring}`}
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -422,7 +553,7 @@ export default function AuthScreens({ mode, onSwitchMode, onLogin, onRegister, o
                       placeholder="••••••••"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full px-4 py-2 bg-slate-900 border border-slate-800 text-sm text-white rounded-xl focus:border-green-500 focus:outline-none transition"
+                      className={`w-full px-4 py-2 bg-slate-900 border border-slate-800 text-sm text-white rounded-xl focus:outline-none transition ${portal.ring}`}
                     />
                   </div>
                 </div>
@@ -430,7 +561,7 @@ export default function AuthScreens({ mode, onSwitchMode, onLogin, onRegister, o
                 <button
                   id="btn-submit-register"
                   type="submit"
-                  className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl mt-3 transition text-sm flex items-center justify-center gap-2"
+                  className={`w-full py-3 text-white font-bold rounded-xl mt-3 transition text-sm flex items-center justify-center gap-2 ${portal.btn}`}
                 >
                   Create My Ecosystem Profile
                   <ArrowRight className="h-4 w-4" />
@@ -442,6 +573,33 @@ export default function AuthScreens({ mode, onSwitchMode, onLogin, onRegister, o
               </div>
             </div>
           )}
+
+          {/* Portal separation - switch to another role portal */}
+          <div className="mt-6 pt-5 border-t border-slate-800/80">
+            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-3 text-center">
+              Not the right portal? Sign in elsewhere
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {(['student', 'staff', 'admin'] as UserRole[]).map(r => (
+                <button
+                  key={r}
+                  id={`go-portal-${r}`}
+                  type="button"
+                  onClick={() => { setLoginError(''); setRegError(''); onChangePortal(r); }}
+                  className={`py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg border transition ${
+                    r === portalRole
+                      ? `${PORTALS[r].chip} border-current`
+                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:border-slate-600'
+                  }`}
+                >
+                  {r === 'admin' ? 'Admin' : r.charAt(0).toUpperCase() + r.slice(1)}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-slate-600 text-center mt-3">
+              Each role has its own secured entry point.
+            </p>
+          </div>
 
         </div>
       </div>

@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Bell, Settings, LogOut, Menu, X, BarChart3, 
-  Plus, ClipboardList, History, MapPin, Users 
+  Plus, ClipboardList, History, MapPin, Users, ShieldCheck
 } from 'lucide-react';
-import { UserRole, User } from '../types';
+import { User, UserRole } from '../types';
 import UnicrossLogo from './UnicrossLogo';
 
 interface DashboardLayoutProps {
@@ -12,7 +12,6 @@ interface DashboardLayoutProps {
   activeTab: string;
   onNavigateTab: (tab: string) => void;
   unreadNotificationsCount: number;
-  onToggleRoleBypass: (role: UserRole) => void;
   children: React.ReactNode;
 }
 
@@ -70,26 +69,35 @@ export default function DashboardLayout({
   activeTab, 
   onNavigateTab, 
   unreadNotificationsCount, 
-  onToggleRoleBypass, 
   children 
 }: DashboardLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [now, setNow] = useState(new Date());
   const theme = THEMES[currentUser.role];
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Configure navigation lists based on role
   const getSidebarItems = () => {
     const items = [
-      { id: 'dashboard', label: 'Ecosystem Dashboard', icon: BarChart3, roles: ['student', 'staff', 'admin'] },
-      { id: 'report-waste', label: 'Report Waste', icon: Plus, roles: ['student', 'admin'] },
+      { id: 'dashboard', label: 'Ecosystem Dashboard', adminLabel: 'Control Centre', icon: BarChart3, roles: ['student', 'staff', 'admin'] },
+      { id: 'report-waste', label: 'Report Waste', adminLabel: 'Dispatch Board', icon: Plus, roles: ['student', 'admin'] },
       { id: 'my-reports', label: 'My Submissions', icon: ClipboardList, roles: ['student'] },
-      { id: 'history', label: 'History & Archives', icon: History, roles: ['student', 'staff', 'admin'] },
-      { id: 'live-map', label: 'Live Fleet Map', icon: MapPin, roles: ['student', 'staff', 'admin'] },
-      { id: 'notifications', label: 'Notifications', icon: Bell, badge: unreadNotificationsCount > 0 ? unreadNotificationsCount : undefined, roles: ['student', 'staff', 'admin'] },
-      { id: 'admin-users', label: 'User Directory', icon: Users, roles: ['admin'] },
-
-      { id: 'settings', label: 'Configuration', icon: Settings, roles: ['student', 'staff', 'admin'] },
+      { id: 'history', label: 'History & Archives', adminLabel: 'Archive & Audit', icon: History, roles: ['student', 'staff', 'admin'] },
+      { id: 'live-map', label: 'Live Fleet Map', adminLabel: 'Fleet Command', icon: MapPin, roles: ['student', 'staff', 'admin'] },
+      { id: 'notifications', label: 'Notifications', adminLabel: 'Alert Centre', icon: Bell, badge: unreadNotificationsCount > 0 ? unreadNotificationsCount : undefined, roles: ['student', 'staff', 'admin'] },
+      { id: 'admin-users', label: 'User Directory', adminLabel: 'Directory & Access', icon: Users, roles: ['admin'] },
+      { id: 'settings', label: 'Configuration', adminLabel: 'System Config', icon: Settings, roles: ['student', 'staff', 'admin'] },
     ];
-    return items.filter(item => item.roles.includes(currentUser.role));
+    return items
+      .filter(item => item.roles.includes(currentUser.role))
+      .map(item => ({
+        ...item,
+        label: currentUser.role === 'admin' && item.adminLabel ? item.adminLabel : item.label,
+      }));
   };
 
   const navItems = getSidebarItems();
@@ -134,7 +142,9 @@ export default function DashboardLayout({
             <UnicrossLogo size="sm" className="h-11 w-11 shrink-0" theme="dark" />
             <div>
               <span className="font-black text-white text-base tracking-tight block">UNICROSS</span>
-              <span className={`text-[10px] ${theme.heading} font-mono tracking-wider block uppercase`}>OCWMS PORTAL</span>
+              <span className={`text-[10px] ${theme.heading} font-mono tracking-wider block uppercase`}>
+                {currentUser.role === 'admin' ? 'OCWMS CONTROL' : 'OCWMS PORTAL'}
+              </span>
             </div>
           </div>
           <button className="md:hidden p-1 bg-slate-800 rounded-lg" onClick={() => setMobileMenuOpen(false)}>
@@ -144,7 +154,9 @@ export default function DashboardLayout({
 
         {/* Navigation lists */}
         <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto custom-scrollbar">
-          <p className={`text-[9px] ${theme.label} font-bold tracking-widest uppercase px-3.5 mb-3`}>Core Operation Console</p>
+          <p className={`text-[9px] ${theme.label} font-bold tracking-widest uppercase px-3.5 mb-3`}>
+            {currentUser.role === 'admin' ? 'Governance Hierarchy' : 'Core Operation Console'}
+          </p>
           
           {navItems.map((item) => {
             const IconComponent = item.icon;
@@ -178,38 +190,15 @@ export default function DashboardLayout({
           })}
         </nav>
 
-        {/* Sandbox Role Switcher + Logged Active Profile card */}
+        {/* Active profile card + logout (roles are separated by portal, no in-app switching) */}
         <div className="p-4 border-t border-slate-800/70 bg-slate-950/30">
-          
-          {/* Quick switch widget for evaluators */}
-          <div className="mb-4 bg-slate-800/40 p-2.5 rounded-xl border border-slate-800/80 text-left">
-            <div className="flex justify-between items-center mb-1.5">
-              <span className={`text-[9px] font-bold ${theme.label} uppercase tracking-widest`}>Test Profile Swapper</span>
-              <span className={`text-[8px] ${theme.badge} px-1 py-0.2 rounded font-mono font-bold uppercase animate-pulse`}>SANDBOX</span>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-1 text-[10px]">
-              <button 
-                id="role-switch-student"
-                onClick={() => onToggleRoleBypass('student')}
-                className={`py-1 text-center font-bold rounded-md transition ${currentUser.role === 'student' ? theme.switchActive : theme.switchInactive}`}
-              >
-                Stud.
-              </button>
-              <button 
-                id="role-switch-staff"
-                onClick={() => onToggleRoleBypass('staff')}
-                className={`py-1 text-center font-bold rounded-md transition ${currentUser.role === 'staff' ? theme.switchActive : theme.switchInactive}`}
-              >
-                Staff
-              </button>
-              <button 
-                id="role-switch-admin"
-                onClick={() => onToggleRoleBypass('admin')}
-                className={`py-1 text-center font-bold rounded-md transition ${currentUser.role === 'admin' ? theme.switchActive : theme.switchInactive}`}
-              >
-                Admin
-              </button>
+
+          <div className="mb-3 bg-slate-800/40 p-2.5 rounded-xl border border-slate-800/80 text-left">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className={`h-3.5 w-3.5 ${theme.label}`} />
+              <span className={`text-[9px] font-bold ${theme.label} uppercase tracking-widest`}>
+                {currentUser.role === 'admin' ? 'Administrator Console' : currentUser.role === 'staff' ? 'Sanitation Staff Portal' : 'Student Portal'}
+              </span>
             </div>
           </div>
 
@@ -249,10 +238,22 @@ export default function DashboardLayout({
         <header id="topbar" className="hidden md:flex h-16 bg-white border-b border-slate-100 items-center justify-between px-8 bg-white/80 backdrop-blur-md sticky top-0 z-30">
           
           <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Active Station</span>
-            <span className={`text-sm font-extrabold capitalize px-3 py-1 rounded-lg ${theme.topbarBadge}`}>
-              {currentUser.role} Space
-            </span>
+            {currentUser.role === 'admin' ? (
+              <>
+                <ShieldCheck className="h-5 w-5 text-violet-600" />
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Executive Node</span>
+                <span className="text-sm font-extrabold uppercase px-3 py-1 rounded-lg bg-violet-600 text-white tracking-wider shadow-sm shadow-violet-200">
+                  Administrator Console
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Active Station</span>
+                <span className={`text-sm font-extrabold capitalize px-3 py-1 rounded-lg ${theme.topbarBadge}`}>
+                  {currentUser.role} Space
+                </span>
+              </>
+            )}
           </div>
 
           {/* Right Top Header section */}
@@ -297,7 +298,36 @@ export default function DashboardLayout({
           </div>
         </header>
 
-        {/* Interactive child panels */}
+        {/* Admin-only command strip: distinct structural element absent from student/staff */}
+        {currentUser.role === 'admin' && (
+          <div className="hidden md:flex flex-wrap items-center justify-between gap-4 px-8 py-2.5 bg-white border-b border-violet-100 border-t-[3px] border-t-violet-600">
+            <div className="flex items-center gap-5 flex-wrap">
+              <span className="text-[10px] font-mono font-black uppercase tracking-[0.2em] text-violet-700">
+                Command Strip
+              </span>
+              <span className="flex items-center gap-2 text-[11px] font-semibold text-slate-600">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                Campus Node Online
+              </span>
+              <span className="flex items-center gap-2 text-[11px] font-semibold text-slate-600">
+                <ShieldCheck className="h-3.5 w-3.5 text-violet-500" />
+                RBAC Enforced
+              </span>
+              <span className="flex items-center gap-2 text-[11px] font-semibold text-slate-600">
+                <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
+                Audit Recording
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-mono text-slate-500">
+                {now.toLocaleDateString(undefined, { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+              </span>
+              <span className="text-[11px] font-mono font-bold text-violet-700 bg-violet-50 border border-violet-100 px-2.5 py-1 rounded-md tabular-nums">
+                {now.toLocaleTimeString()}
+              </span>
+            </div>
+          </div>
+        )}
         <div className="flex-1 p-4 md:p-8 overflow-y-auto max-w-7xl mx-auto w-full">
           {children}
         </div>

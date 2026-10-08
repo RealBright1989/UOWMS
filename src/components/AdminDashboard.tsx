@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Users, ClipboardList, ShieldAlert, CheckCircle2, Search, 
-  Filter, MapPin, Trash2, Edit2 
+  Filter, MapPin, Trash2, Edit2, X, Mail, Phone, GraduationCap, Building2, Home 
 } from 'lucide-react';
 import { WasteReport, User, ActivityLog, WASTE_CATEGORIES } from '../types';
 import { 
@@ -39,6 +39,7 @@ export default function AdminDashboard({
   // User Manager states
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'student' | 'staff' | 'admin'>('all');
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   // KPI Calculations based on real list counts
   const totalUsersCount = users.length;
@@ -102,35 +103,57 @@ export default function AdminDashboard({
         </div>
 
         {/* Local Admin Views switch controls */}
-        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs text-slate-700 font-bold">
-          <button
-            id="admin-tab-analytics"
-            onClick={() => setAdminSubTab('analytics')}
-            className={`px-4 py-2 rounded-lg transition-all ${adminSubTab === 'analytics' ? 'bg-white text-slate-900 shadow-sm' : 'hover:text-slate-900'}`}
-          >
-            Sanitation Analytics
-          </button>
-          <button
-            id="admin-tab-users"
-            onClick={() => setAdminSubTab('user-manager')}
-            className={`px-4 py-2 rounded-lg transition-all ${adminSubTab === 'user-manager' ? 'bg-white text-slate-900 shadow-sm' : 'hover:text-slate-900'}`}
-          >
-            User Directory ({totalUsersCount})
-          </button>
-          <button
-            id="admin-tab-activities"
-            onClick={() => setAdminSubTab('activities')}
-            className={`px-4 py-2 rounded-lg transition-all ${adminSubTab === 'activities' ? 'bg-white text-slate-900 shadow-sm' : 'hover:text-slate-900'}`}
-          >
-            System Audit logs
-          </button>
+        <div className="flex flex-col items-stretch lg:items-end gap-3">
+          {/* Primary admin-only quick actions */}
+          <div className="flex flex-wrap gap-2.5">
+            <button
+              id="admin-btn-all-reports"
+              onClick={() => onNavigateTab('history')}
+              className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-violet-200 transition"
+            >
+              <ClipboardList className="h-4 w-4" />
+              All Reports &amp; Dispatch
+            </button>
+            <button
+              id="admin-btn-registered-users"
+              onClick={() => setAdminSubTab('user-manager')}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold rounded-xl border-2 border-violet-500 shadow-sm transition"
+            >
+              <Users className="h-4 w-4 text-violet-600" />
+              Registered Users ({totalUsersCount})
+            </button>
+          </div>
+
+          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs text-slate-700 font-bold">
+            <button
+              id="admin-tab-analytics"
+              onClick={() => setAdminSubTab('analytics')}
+              className={`px-4 py-2 rounded-lg transition-all ${adminSubTab === 'analytics' ? 'bg-white text-slate-900 shadow-sm' : 'hover:text-slate-900'}`}
+            >
+              Sanitation Analytics
+            </button>
+            <button
+              id="admin-tab-users"
+              onClick={() => setAdminSubTab('user-manager')}
+              className={`px-4 py-2 rounded-lg transition-all ${adminSubTab === 'user-manager' ? 'bg-white text-slate-900 shadow-sm' : 'hover:text-slate-900'}`}
+            >
+              User Directory ({totalUsersCount})
+            </button>
+            <button
+              id="admin-tab-activities"
+              onClick={() => setAdminSubTab('activities')}
+              className={`px-4 py-2 rounded-lg transition-all ${adminSubTab === 'activities' ? 'bg-white text-slate-900 shadow-sm' : 'hover:text-slate-900'}`}
+            >
+              System Audit logs
+            </button>
+          </div>
         </div>
       </div>
 
       {/* KPI Top level metrics metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5">
         
-        <div className="bg-white p-4.5 rounded-2xl border border-slate-100 shadow-sm">
+        <div className="bg-white p-4.5 rounded-2xl border border-slate-100 border-t-[3px] border-t-violet-500 shadow-sm shadow-violet-100/60">
           <div className="flex justify-between items-center text-slate-400">
             <span className="text-[10px] font-bold uppercase tracking-wider font-mono">Total Users</span>
             <Users className="h-4.5 w-4.5 text-slate-700" />
@@ -139,7 +162,7 @@ export default function AdminDashboard({
           <p className="text-[9px] text-slate-400 mt-0.5">Students + Field Staff</p>
         </div>
 
-        <div className="bg-white p-4.5 rounded-2xl border border-slate-100 shadow-sm">
+        <div className="bg-white p-4.5 rounded-2xl border border-slate-100 border-t-[3px] border-t-violet-500 shadow-sm shadow-violet-100/60">
           <div className="flex justify-between items-center text-slate-400">
             <span className="text-[10px] font-bold uppercase tracking-wider font-mono">Field Crew</span>
             <Users className="h-4.5 w-4.5 text-blue-500" />
@@ -148,7 +171,7 @@ export default function AdminDashboard({
           <p className="text-[9px] text-slate-400 mt-0.5">Dispatched truck staff</p>
         </div>
 
-        <div className="bg-white p-4.5 rounded-2xl border border-slate-100 shadow-sm">
+        <div className="bg-white p-4.5 rounded-2xl border border-slate-100 border-t-[3px] border-t-violet-500 shadow-sm shadow-violet-100/60">
           <div className="flex justify-between items-center text-slate-400">
             <span className="text-[10px] font-bold uppercase tracking-wider font-mono">Total Reports</span>
             <ClipboardList className="h-4.5 w-4.5 text-amber-500" />
@@ -157,7 +180,7 @@ export default function AdminDashboard({
           <p className="text-[9px] text-slate-400 mt-0.5">Filings across semesters</p>
         </div>
 
-        <div className="bg-white p-4.5 rounded-2xl border border-slate-100 shadow-sm">
+        <div className="bg-white p-4.5 rounded-2xl border border-slate-100 border-t-[3px] border-t-violet-500 shadow-sm shadow-violet-100/60">
           <div className="flex justify-between items-center text-slate-400">
             <span className="text-[10px] font-bold uppercase tracking-wider font-mono">Resolutions</span>
             <CheckCircle2 className="h-4.5 w-4.5 text-green-500" />
@@ -166,7 +189,7 @@ export default function AdminDashboard({
           <p className="text-[9px] text-slate-400 mt-0.5">Successfully clean restored</p>
         </div>
 
-        <div className="bg-white p-4.5 rounded-2xl border border-slate-100 shadow-sm">
+        <div className="bg-white p-4.5 rounded-2xl border border-slate-100 border-t-[3px] border-t-violet-500 shadow-sm shadow-violet-100/60">
           <div className="flex justify-between items-center text-slate-400">
             <span className="text-[10px] font-bold uppercase tracking-wider font-mono">Active Trucks</span>
             <ShieldAlert className="h-4.5 w-4.5 text-red-500" />
@@ -310,7 +333,7 @@ export default function AdminDashboard({
           </div>
 
           {/* Simple Recent Incidents Board Quick access */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+          <div className="bg-white p-6 rounded-3xl border border-slate-100 border-t-[3px] border-t-violet-500 shadow-sm shadow-violet-100/40 space-y-4">
             <div>
               <span className="text-[9px] text-green-600 font-bold uppercase tracking-widest font-mono">Live board feeds</span>
               <h3 className="text-base font-black text-slate-800">Latest Campus Filings</h3>
@@ -354,13 +377,20 @@ export default function AdminDashboard({
 
       {/* RENDER USER MANAGEMENT TAB */}
       {adminSubTab === 'user-manager' && (
-        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
+        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-100 border-t-[3px] border-t-violet-500 shadow-sm shadow-violet-100/40 space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-50 pb-4">
             <div>
               <span className="text-[9px] text-green-600 font-bold uppercase tracking-widest font-mono">System Accounts Directory</span>
               <h3 className="text-lg font-black text-slate-800">University Roster Directory</h3>
               <p className="text-xs text-slate-500">Edit, suspend, delete, or promote student reporters and environment field staff.</p>
             </div>
+            <button
+              id="admin-btn-back-control"
+              onClick={() => setAdminSubTab('analytics')}
+              className="shrink-0 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition"
+            >
+              ← Back to Control Centre
+            </button>
           </div>
 
           {/* Search bar + filter toolbar */}
@@ -405,27 +435,36 @@ export default function AdminDashboard({
               </thead>
               <tbody>
                 {filteredUsers.map((usr) => (
-                  <tr key={usr.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition">
+                  <tr
+                    key={usr.id}
+                    className="border-b border-slate-50 hover:bg-slate-50/50 transition cursor-pointer"
+                    onClick={() => setSelectedUser(usr)}
+                  >
                     <td className="py-4 px-4">
-                      <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        id={`view-user-${usr.id}`}
+                        onClick={() => setSelectedUser(usr)}
+                        className="flex items-center gap-3 text-left group"
+                      >
                         <img 
                           src={usr.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"} 
                           alt="usr av" 
-                          className="w-9 h-9 rounded-full object-cover border border-slate-100 shrink-0" 
+                          className="w-9 h-9 rounded-full object-cover border border-slate-100 shrink-0 group-hover:border-violet-400 transition" 
                         />
                         <div className="text-left text-xs">
-                          <p className="font-extrabold text-slate-800">{usr.name}</p>
+                          <p className="font-extrabold text-slate-800 group-hover:text-violet-700 underline-offset-2 group-hover:underline transition">{usr.name}</p>
                           <p className="text-slate-400 text-[10px] font-mono leading-none mt-0.5">
                             {usr.matricNumber || 'STAFF_ID_VERIFIED'}
                           </p>
                         </div>
-                      </div>
+                      </button>
                     </td>
                     <td className="py-4 px-4 text-left">
                       <p className="font-bold text-slate-700">{usr.email}</p>
                       <p className="text-slate-400 text-[10px] leading-none mt-0.5">{usr.phoneNumber || 'Not mapped'}</p>
                     </td>
-                    <td className="py-4 px-4">
+                    <td className="py-4 px-4" onClick={(e) => e.stopPropagation()}>
                       <select
                         id={`role-modify-${usr.id}`}
                         value={usr.role}
@@ -447,7 +486,7 @@ export default function AdminDashboard({
                         <p>{usr.department || 'Envir. services teams'}</p>
                       )}
                     </td>
-                    <td className="py-4 px-4">
+                    <td className="py-4 px-4" onClick={(e) => e.stopPropagation()}>
                       <select
                         id={`status-modify-${usr.id}`}
                         value={usr.status}
@@ -463,7 +502,15 @@ export default function AdminDashboard({
                         <option value="Pending">Pending</option>
                       </select>
                     </td>
-                    <td className="py-4 px-4 text-right space-x-1.5">
+                    <td className="py-4 px-4 text-right space-x-1.5" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        id={`action-view-user-${usr.id}`}
+                        onClick={() => setSelectedUser(usr)}
+                        className="px-2.5 py-1.5 rounded-lg font-bold bg-violet-50 hover:bg-violet-100 text-violet-700 transition"
+                      >
+                        View Profile
+                      </button>
                       <button
                         id={`action-suspend-user-${usr.id}`}
                         onClick={() => onUpdateUserStatus(usr.id, usr.status === 'Suspended' ? 'Active' : 'Suspended')}
@@ -493,7 +540,7 @@ export default function AdminDashboard({
 
       {/* RENDER SYSTEM AUDIT LOGS TAB */}
       {adminSubTab === 'activities' && (
-        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
+        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-100 border-t-[3px] border-t-violet-500 shadow-sm shadow-violet-100/40 space-y-6">
           <div>
             <span className="text-[9px] text-green-600 font-bold uppercase tracking-widest font-mono">Operations telemetry log</span>
             <h3 className="text-lg font-black text-slate-800">Operational System Audit</h3>
@@ -526,6 +573,115 @@ export default function AdminDashboard({
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* USER PROFILE DETAIL MODAL */}
+      {selectedUser && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setSelectedUser(null)}
+        >
+          <div
+            id={`user-detail-modal-${selectedUser.id}`}
+            className="bg-white w-full max-w-md rounded-3xl overflow-hidden shadow-2xl text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header band with passport */}
+            <div className="bg-gradient-to-br from-violet-700 to-purple-900 p-6 relative">
+              <button
+                id="close-user-detail"
+                onClick={() => setSelectedUser(null)}
+                className="absolute top-4 right-4 p-1.5 bg-white/15 hover:bg-white/25 text-white rounded-lg transition"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <div className="flex items-center gap-4">
+                <img
+                  src={selectedUser.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"}
+                  alt={selectedUser.name}
+                  className="w-20 h-20 rounded-2xl object-cover border-4 border-white/30 shadow-lg shrink-0"
+                />
+                <div className="min-w-0">
+                  <h3 className="text-lg font-black text-white truncate">{selectedUser.name}</h3>
+                  <p className="text-[11px] text-violet-200 font-mono truncate">{selectedUser.email}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-[9px] font-black uppercase tracking-widest bg-white/20 text-white px-2 py-1 rounded-md">
+                      {selectedUser.role}
+                    </span>
+                    <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md ${
+                      selectedUser.status === 'Active' ? 'bg-green-400/90 text-green-950' :
+                      selectedUser.status === 'Suspended' ? 'bg-red-400/90 text-red-950' : 'bg-amber-400/90 text-amber-950'
+                    }`}>
+                      {selectedUser.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Detail rows */}
+            <div className="p-6 space-y-3 text-xs">
+              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                <GraduationCap className="h-4 w-4 text-violet-600 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Matric / Staff ID</p>
+                  <p className="font-bold text-slate-800 truncate">{selectedUser.matricNumber || 'Not assigned'}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                <Mail className="h-4 w-4 text-violet-600 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Email Directory</p>
+                  <p className="font-bold text-slate-800 break-all">{selectedUser.email}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                <Phone className="h-4 w-4 text-violet-600 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Phone Contact</p>
+                  <p className="font-semibold text-slate-800">{selectedUser.phoneNumber || 'Not mapped'}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                  <Building2 className="h-4 w-4 text-violet-600 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Faculty</p>
+                    <p className="font-bold text-slate-800 truncate">{selectedUser.faculty || 'N/A'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                  <Users className="h-4 w-4 text-violet-600 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Department</p>
+                    <p className="font-bold text-slate-800 truncate">{selectedUser.department || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                <Home className="h-4 w-4 text-violet-600 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Hostel / Unit</p>
+                  <p className="font-bold text-slate-800 truncate">{selectedUser.hostel || selectedUser.department || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 pb-6 flex justify-end">
+              <button
+                id="user-detail-close-footer"
+                onClick={() => setSelectedUser(null)}
+                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition"
+              >
+                Close Profile
+              </button>
+            </div>
           </div>
         </div>
       )}

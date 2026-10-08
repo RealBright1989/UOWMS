@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  Settings, User, Bell, Shield, Sparkles, CheckCircle2 
+  Settings, User, Bell, Shield, Sparkles, CheckCircle2, Camera 
 } from 'lucide-react';
 import { User as UserType } from '../types';
 
@@ -17,6 +17,15 @@ export default function SettingsScreen({ currentUser, onUpdateProfile }: Setting
   const [phone, setPhone] = useState(currentUser.phoneNumber || '');
   const [hostel, setHostel] = useState(currentUser.hostel || '');
   const [avatarUrl, setAvatarUrl] = useState(currentUser.avatar || '');
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => setAvatarUrl(reader.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
   
   const [emailAlerts, setEmailAlerts] = useState(true);
   const [smsAlerts, setSmsAlerts] = useState(false);
@@ -94,15 +103,32 @@ export default function SettingsScreen({ currentUser, onUpdateProfile }: Setting
                   onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'; }}
                 />
                 <div className="flex-1">
-                  <label className="text-slate-400 block mb-1">Profile Picture URL</label>
-                  <input
-                    id="set-avatar"
-                    type="text"
-                    placeholder="Paste image URL..."
-                    value={avatarUrl}
-                    onChange={(e) => setAvatarUrl(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 text-slate-850 text-xs rounded-xl focus:border-green-500 focus:outline-none transition"
-                  />
+                  <label className="text-slate-400 block mb-1">Profile Passport Photograph</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="set-avatar"
+                      type="text"
+                      placeholder="Paste image URL or upload a photo..."
+                      value={avatarUrl}
+                      onChange={(e) => setAvatarUrl(e.target.value)}
+                      className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 text-slate-850 text-xs rounded-xl focus:border-green-500 focus:outline-none transition"
+                    />
+                    <label
+                      htmlFor="set-avatar-upload"
+                      className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl cursor-pointer transition"
+                    >
+                      <Camera className="h-3.5 w-3.5" />
+                      Upload / Take
+                    </label>
+                    <input
+                      id="set-avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      capture="user"
+                      onChange={handleAvatarUpload}
+                      className="hidden"
+                    />
+                  </div>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

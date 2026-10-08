@@ -1,923 +1,758 @@
-# CHAPTER FOUR: SYSTEM IMPLEMENTATION AND TESTING
+# CHAPTER FOUR: SYSTEM DESIGN AND IMPLEMENTATION
 
-## 4.0 Introduction
+## 4.1 Objective of the Design
 
-This chapter presents the implementation details of the Online Campus Waste Management System (OCWMS) for the University of Cross River State (UNICROSS). It discusses the development tools and environment used, the system architecture, the step-by-step implementation of all system modules, the testing methodologies employed to validate system functionality, and the results obtained. The chapter concludes with a discussion of challenges encountered during the development process and how they were addressed.
+The primary objective of designing the Online Campus Waste Management System (OCWMS) is to provide the University of Cross River State (UNICROSS) with a web-based platform that enables students, sanitation staff, and administrators to report, track, manage, and resolve waste incidents across campus.
 
----
+The system design aims to achieve the following objectives:
 
-## 4.1 Development Tools and Environment
+1. **Centralised Waste Reporting:** Provide students with an accessible interface to report waste incidents by uploading photographs, selecting waste categories, specifying locations, and setting urgency levels.
 
-The OCWMS was developed using a modern full-stack JavaScript/TypeScript technology stack. Table 4.1 provides a summary of the tools and technologies employed.
+2. **AI-Powered Classification:** Integrate artificial intelligence (Google Gemini API) that automatically classifies uploaded waste images into categories (Plastic, Glass, Organic, Paper, Metal, Electronic, Mixed Waste) with handling instructions and recycling guidance.
 
-**Table 4.1: Development Tools and Technologies**
+3. **Role-Based Access Control:** Implement three distinct user roles — Student, Staff, and Administrator — each with tailored dashboards, permissions, and visual themes reflecting their responsibilities.
 
-| S/N | Technology | Version | Purpose |
-|-----|-----------|---------|---------|
-| 1 | React | 19.0.1 | Frontend UI library |
-| 2 | TypeScript | 5.8.2 | Type-safe JavaScript superset |
-| 3 | Vite | 6.2.3 | Frontend build tool and dev server |
-| 4 | Tailwind CSS | 4.1.14 | Utility-first CSS framework |
-| 5 | Node.js | 24.16.0 | JavaScript runtime environment |
-| 6 | Express.js | 4.21.2 | Backend web framework and REST API server |
-| 7 | MapLibre GL JS | 5.24.0 | Open-source map rendering library |
-| 8 | Recharts | 3.8.1 | Charting and visualization library |
-| 9 | Lucide React | 0.546.0 | Icon component library |
-| 10 | Google Gemini AI | 2.4.0 | AI-powered waste classification |
-| 11 | Motion | 12.23.24 | Animation library |
-| 12 | tsx | 4.21.0 | TypeScript execution for Node.js |
-| 13 | esbuild | 0.25.0 | JavaScript bundler for production builds |
-| 14 | Docker | Latest | Containerization for deployment |
+4. **Real-Time Task Management:** Enable administrators to assign reports to specific sanitation staff, and allow staff to accept, work on, and resolve tasks with photographic evidence of completion.
 
-**Development Hardware:**
-- Processor: Intel Core i5 (12th Generation)
-- RAM: 8 GB
-- Storage: 512 GB SSD
-- Operating System: Windows 11
+5. **Interactive Campus Mapping:** Provide a live MapLibre GL map showing campus waste bin locations (with fill levels) and collection vehicles (with operational status) for better resource allocation.
 
-**Development Tools:**
-- Code Editor: Visual Studio Code
-- Version Control: Git with GitHub (repository: `RealBright1989/UOWMS`)
-- Package Manager: npm (Node Package Manager)
-- Testing Browser: Google Chrome (latest version)
+6. **Automated Notifications and Audit Trail:** Generate notifications when reports are submitted, assigned, or completed, and maintain a chronological activity log for accountability and auditing.
+
+7. **Analytics and Reporting:** Provide administrators with visual analytics including charts, KPIs, and trend data for informed decision-making regarding campus sanitation operations.
 
 ---
 
 ## 4.2 System Architecture
 
-The OCWMS adopts a client-server architecture with a single-page application (SPA) frontend communicating with a Node.js/Express backend through RESTful API endpoints. All persistent data is stored in a server-side JSON file (`server/db.json`), eliminating the need for a traditional database server while maintaining data durability across server restarts.
+The OCWMS is designed using a **three-tier client-server architecture**, separating the system into the Presentation Tier, the Application Tier, and the Data Tier.
 
-### 4.2.1 Architectural Overview
+### 4.2.1 Presentation Tier
 
-The system is structured into three logical layers:
+The user-facing layer implemented as a **Single-Page Application (SPA)** using React 19 with TypeScript. It renders all UI components, captures user input, sends HTTP requests to the Application Tier via the API client, and manages client-side navigation without page reloads. Communication with the server is exclusively through RESTful API calls using the `fetch` API.
 
-1. **Presentation Layer (Frontend):** Built with React 19 and TypeScript, this layer handles all user interface rendering and client-side interactivity. It consists of reusable components organized by functionality. The frontend communicates with the backend exclusively through RESTful API calls defined in `src/api.ts`.
+### 4.2.2 Application Tier
 
-2. **Application Layer (Backend):** Built with Express.js, this layer provides 22 RESTful API endpoints organized across six route modules: Authentication, Reports, Users, Notifications, Activity Logs, and Map data. It also handles AI-powered waste classification and serves the React frontend in production mode.
+The processing layer implemented using **Node.js** with **Express.js**. It receives and processes HTTP requests, executes business logic (authentication, report lifecycle, role verification), performs AI classification via the Google Gemini API, generates automatic notifications and activity log entries, and returns JSON responses. The Application Tier exposes **22 RESTful API endpoints** organised across six route modules:
 
-3. **Data Layer (JSON File Persistence):** All persistent data is stored in a server-side JSON file (`server/db.json`) managed by `server/data.ts`. The data module provides `getDb()` and `commit()` functions that handle loading from disk, in-memory manipulation, and writing changes back to the file system. Data survives server restarts without requiring a database engine.
+**Table 4.1: API Route Modules**
 
-**Figure 4.1: System Architecture Diagram**
+| Module | Prefix | Endpoints | Responsibility |
+|--------|--------|-----------|----------------|
+| Authentication | `/api/auth` | 3 | Registration, login, profile retrieval |
+| Reports | `/api/reports` | 6 | CRUD, status updates, assignment, comments |
+| Users | `/api/users` | 5 | Management, role changes, suspension/deletion |
+| Notifications | `/api/notifications` | 3 | Listing and read status management |
+| Activity Logs | `/api/logs` | 1 | Audit trail retrieval |
+| Map Data | `/api/map` | 2 | Bin locations and vehicle data |
+
+Additional endpoints: `/api/classify` (AI waste classification) and `/api/health` (system health check).
+
+### 4.2.3 Data Tier
+
+The persistence layer uses a **server-side JSON file** (`server/db.json`) rather than a traditional RDBMS. The data module (`server/data.ts`) provides two core functions: `getDb()` loads the JSON file into memory on first access, and `commit()` writes the in-memory state back to disk after every write operation. This ensures fast in-memory reads, durable writes, and data recovery after server restarts.
+
+### 4.2.4 Architecture Diagram
 
 ```
-┌──────────────────────────────────────────────────┐
-│                    CLIENT BROWSER                 │
-│  ┌────────────────────────────────────────────┐  │
-│  │           React SPA (Vite Build)           │  │
-│  │  ┌─────────┐ ┌──────────┐ ┌────────────┐  │  │
-│  │  │ Landing │ │  Auth    │ │   Portal   │  │  │
-│  │  │  Page   │ │ Screens  │ │(Dashboard) │  │  │
-│  │  └─────────┘ └──────────┘ └────────────┘  │  │
-│  │           ┌──────────────┐                 │  │
-│  │           │  src/api.ts  │  (REST Client)  │  │
-│  │           └──────────────┘                 │  │
-│  └────────────────────────────────────────────┘  │
-│                     │ HTTP/JSON                   │
-└─────────────────────┼────────────────────────────┘
+┌──────────────────────────────────────────┐
+│         PRESENTATION TIER                │
+│      (React SPA in Web Browser)          │
+│                                          │
+│  Landing Page │ Auth │ Portal            │
+│  (Dashboards, Forms, Maps)              │
+│               │                          │
+│        src/api.ts (HTTP Client)          │
+└────────────────┬─────────────────────────┘
+                 │ HTTP / REST API
+                 │ (JSON)
+┌────────────────┼─────────────────────────┐
+│         APPLICATION TIER                 │
+│      (Node.js + Express.js)              │
+│                                          │
+│  Auth │ Reports │ Users │ Logs           │
+│  Notifications │ Map │ AI Classify       │
+│               │                          │
+│        server/data.ts (DbModule)         │
+└────────────────┬─────────────────────────┘
+                 │ File I/O
+┌────────────────┼─────────────────────────┐
+│           DATA TIER                      │
+│          (server/db.json)                │
+│                                          │
+│  Users │ Reports │ Notifications │ Logs  │
+└──────────────────────────────────────────┘
+```
+
+**Figure 4.1: Three-Tier Architecture Diagram of the OCWMS**
+
+---
+
+## 4.3 Choice of Programming Environment
+
+The programming environment was selected based on suitability for web development, open-source availability, ease of deployment, and community support.
+
+**Table 4.2: Technology Selection and Justification**
+
+| Technology | Version | Purpose | Why Selected | Alternatives Considered |
+|------------|---------|---------|-------------|------------------------|
+| React + TypeScript | 19.0.1 / 5.8.2 | Frontend framework | Component reusability, type safety | Vue.js, Angular |
+| Vite | 6.2.3 | Build tool / dev server | Fast HMR, native TS support | Webpack, CRA |
+| Tailwind CSS | 4.1.14 | UI styling | Utility-first, responsive | Bootstrap, plain CSS |
+| MapLibre GL JS | 5.24.0 | Interactive map | Free, no API key, OSM tiles | Google Maps (paid) |
+| Recharts | 3.8.1 | Data visualisation | React-native charts | Chart.js, D3.js |
+| Lucide React | 0.546.0 | Icon library | Lightweight, consistent | Font Awesome, Heroicons |
+| Node.js | 24.16.0 | Server runtime | Event-driven, JS across all tiers | Python/Django, PHP |
+| Express.js | 4.21.2 | Web framework | Simple, lightweight, middleware | Koa, Fastify |
+| esbuild | 0.25.0 | Server bundler | Sub-second build times | Webpack |
+
+**Frontend technologies:** React was chosen for its component-based architecture promoting code reusability. TypeScript provides static type checking reducing runtime errors. Vite offers fast hot module replacement. Tailwind CSS enables rapid UI development with responsive utilities. MapLibre GL provides free OpenStreetMap tiles without API keys.
+
+**Backend technologies:** Node.js was chosen for its non-blocking, event-driven architecture handling concurrent requests efficiently. Express.js provides simple routing, JSON body parsing, and middleware support. esbuild bundles the server into a single production file.
+
+---
+
+## 4.4 Database Structure
+
+The OCWMS uses a **file-based database** where all persistent data is stored in `server/db.json`. The file is managed by `server/data.ts`, which provides controlled read/write operations.
+
+### 4.4.1 Database Schema
+
+The JSON file contains four top-level collections (arrays):
+
+```
+{
+  "users":        [ ... ],
+  "reports":      [ ... ],
+  "notifications": [ ... ],
+  "logs":         [ ... ]
+}
+```
+
+### 4.4.2 Data Access Pattern
+
+All data access follows a consistent pattern through two exported functions:
+
+- **`getDb()`** — Returns the in-memory copy of the database. On first call, reads `server/db.json` from disk; subsequent calls return the cached copy.
+- **`commit()`** — Writes the current in-memory state back to `server/db.json` on disk, called after every write operation.
+
+This ensures fast in-memory reads, durable writes, data recovery after restarts, and minimal disk I/O.
+
+---
+
+## 4.5 Database Table Definitions
+
+Although the system uses a JSON file, the data is structured in tabular form.
+
+### 4.5.1 Users Collection
+
+**Table 4.3: Users Schema**
+
+| Field | Data Type | Constraint | Description |
+|-------|-----------|------------|-------------|
+| id | String | Primary Key | Unique identifier (e.g., "u_401") |
+| name | String | Required | Full legal name |
+| email | String | Required, Unique | University or personal email |
+| role | String | Required | "student", "staff", or "admin" |
+| status | String | Required | "Active", "Suspended", or "Pending" |
+| avatar | String | Optional | Profile picture URL |
+| matricNumber | String | Optional | Student matric number |
+| phoneNumber | String | Optional | Contact phone number |
+| faculty | String | Optional | Faculty of study |
+| department | String | Optional | Department of study |
+| hostel | String | Optional | Hostel allocation |
+
+### 4.5.2 Reports Collection
+
+**Table 4.4: Reports Schema**
+
+| Field | Data Type | Constraint | Description |
+|-------|-----------|------------|-------------|
+| id | String | Primary Key | Unique identifier (e.g., "R-1744") |
+| category | String | Required | Waste category (see Table 4.5) |
+| priority | String | Required | "Low", "Medium", "High", or "Emergency" |
+| location | Object | Required | Faculty, building, latitude, longitude |
+| description | String | Required | Text description of the incident |
+| imageUrl | String | Optional | Base64 data URL of uploaded photo |
+| completionImageUrl | String | Optional | Photo evidence of completed cleanup |
+| status | String | Required | "Pending", "Assigned", "In Progress", or "Completed" |
+| dateSubmitted | String (ISO) | Required | Date and time of submission |
+| assignedStaffId | String | Optional | ID of assigned staff member |
+| assignedStaffName | String | Optional | Name of assigned staff member |
+| studentId | String | Required | ID of the reporting student |
+| studentName | String | Required | Name of the reporting student |
+| comments | Array | Required | Array of Comment objects |
+| aiClassification | Object | Optional | AI analysis results |
+
+**Table 4.5: Waste Category Values**
+
+| Category | Description | Colour |
+|----------|-------------|--------|
+| Plastic | Bottles, bags, containers | Green |
+| Glass | Broken glass, jars, mirrors | Purple |
+| Organic | Food waste, leaves, grass | Brown |
+| Paper | Paper, cardboard, books | Blue |
+| Metal | Cans, aluminium, iron | Grey |
+| Electronic | Batteries, bulbs, e-waste | Red |
+| Mixed Waste | Unclassified or mixed | Teal |
+
+### 4.5.3 Comments Sub-Schema
+
+**Table 4.6: Comment Object Schema**
+
+| Field | Data Type | Description |
+|-------|-----------|-------------|
+| id | String | Unique identifier |
+| author | String | Name of the comment author |
+| authorRole | String | "student", "staff", or "admin" |
+| content | String | Comment text |
+| timestamp | String (ISO) | Date and time posted |
+
+### 4.5.4 Notifications Collection
+
+**Table 4.7: Notifications Schema**
+
+| Field | Data Type | Constraint | Description |
+|-------|-----------|------------|-------------|
+| id | String | Primary Key | Unique identifier |
+| title | String | Required | Short notification title |
+| message | String | Required | Detailed message |
+| timestamp | String (ISO) | Required | Date and time of creation |
+| read | Boolean | Required | Whether notification has been read |
+| type | String | Required | "success", "info", "warning", or "error" |
+
+**Table 4.8: Notification Generation Events**
+
+| Event | Title Format | Type |
+|-------|-------------|------|
+| Report submitted | "[Category] Incident Reported" | info |
+| Staff assigned | "New Dispatch Assignment" | info |
+| Report completed | "Cleanup Completed ([ID])" | success |
+| User registered | "Welcome to UNICROSS OCWMS!" | success |
+
+### 4.5.5 Activity Logs Collection
+
+**Table 4.9: Activity Logs Schema**
+
+| Field | Data Type | Constraint | Description |
+|-------|-----------|------------|-------------|
+| id | String | Primary Key | Unique identifier |
+| action | String | Required | Type of action performed |
+| user | String | Required | Name of the user |
+| role | String | Required | Role of the user |
+| timestamp | String (ISO) | Required | Date and time of action |
+| details | String | Required | Detailed description |
+
+**Table 4.10: Activity Log Action Types**
+
+| Action | Triggered By | Example Details |
+|--------|-------------|-----------------|
+| New Report Filed | Student submission | "Filed R-1744 (Plastic) at Block A." |
+| Status: Assigned | Admin assignment | "Marked R-1744 as Assigned." |
+| Status: In Progress | Staff acceptance | "Marked R-1744 as In Progress." |
+| Status: Completed | Staff completion | "Marked R-1744 as Completed." |
+| New Registration | User sign-up | "Registered with Matric U/2021/ENG/0441" |
+| User Suspended | Admin action | "Suspended user Bright Okon." |
+| Role Changed | Admin action | "Changed Bright Okon role to staff." |
+| User Deleted | Admin action | "Deleted user Bright Okon." |
+
+---
+
+## 4.6 Input and Output Screen Formats
+
+### 4.6.1 Landing Page (Output)
+
+First page displayed on visit. Contains a top navigation bar with logo and "Sign In"/"Get Started" buttons, a hero image carousel (6 slides with trust badges), four feature cards (Garbage Collection Fleet, Smart Waste Bins, Recycling Stations, Trained Personnel), a "How It Works" section (4 numbered steps), animated statistics counters (28,450+ Tons Collected, 12,600+ Routes, 1,580+ Smart Bins, 99% Efficiency), Quick Access login cards (Student/Staff/Admin), and a footer.
+
+### 4.6.2 Login Screen (Input)
+
+Split-panel layout: left panel shows UNICROSS branding with tagline and statistics; right panel toggles between Login and Register forms. Login form includes email input, password field with show/hide toggle, "Remember this session" checkbox, and "Enter Operational Panel" submit button. Three Quick Access buttons (STUDENT, STAFF, ADMIN) enable instant login without credentials.
+
+### 4.6.3 Registration Screen (Input)
+
+Form fields: Full Legal Name, Matric Number, Phone Number, Email Address, Faculty (dropdown with 6 options), Department, Hostel Allocation, Password, and Confirm Password. Submit button: "Create My Ecosystem Profile".
+
+### 4.6.4 Student Dashboard (Output)
+
+Dark gradient welcome banner with student name and "Report Waste Spot" button. Four KPI cards (Total Submissions, Awaiting Staff, Active Cleanup, Resolved Issues). Weekly Submissions bar chart (Mon–Sun). Waste Categories pie chart (donut). Recent Submissions table with columns: Filing ID, Incident Details (thumbnail + category), Faculty Landmark, Urgency (colour badge), Status (colour dot), Action button.
+
+### 4.6.5 Staff Dashboard (Output)
+
+"SANITATION FORCE DISPATCH" banner with staff name. Four KPI cards (Assigned Tasks, Completed Resolutions, Average Completion Time, Operational Tier). Task table with columns: Task ID, Incident Assets (thumbnail + category), Landmark Coordinates, Priority badge, Duty Status (animated dot), Action buttons ("Accept Task", "Resolve Task", or "TASK RESOLVED" badge).
+
+### 4.6.6 Admin Dashboard (Output)
+
+Five KPI cards (Total Users, Field Crew, Total Reports, Resolutions, Active Trucks). Three sub-tabs: (1) Sanitation Analytics — area/pie/bar charts, faculty rankings, recent report cards; (2) User Directory — search, role filter, inline role/status editing, delete; (3) System Audit Logs — chronological list with colour-coded action dots.
+
+### 4.6.7 Report Submission Form (Input)
+
+Photo upload zone with drag/click-to-upload and four preset sandbox photos. AI Classification Panel showing loading spinner, then category, confidence %, handling tip, recycle potential, and green tip. Form fields: Waste Category (dropdown), Incident Urgency (4 segmented buttons), Campus Faculty/Area (dropdown), Building Name, Description. Submit button: "Dispatch Incident Report". Interactive mini-map on the right with clickable landmarks and GPS coordinates.
+
+### 4.6.8 Live Fleet Map (Output)
+
+MapLibre GL map with OpenStreetMap tiles, centered on UNICROSS campus [8.351, 4.9755]. Toggle between "Waste Bins" and "Collection Vehicles". Bin view shows 10 coloured circle markers with fill-level bars (green/amber/red). Vehicle view shows 3 truck markers with driver and status info. Dynamic legends for each view.
+
+### 4.6.9 Notifications Screen (Output)
+
+"Active Circular Notifications" header with "Mark All as Read" button. Notification cards show coloured dot (green/blue/red), timestamp, title, message, and "Unread" badge. Empty state shows bell icon with "No new alerts".
+
+### 4.6.10 Settings Screen (Input/Output)
+
+Profile Settings (avatar, name, email, phone, hostel, save button). Notification Preferences (3 toggle checkboxes). Security Credentials (current/new/confirm password, update button). Green Code of Conduct guidelines.
+
+### 4.6.11 History and Archives (Output)
+
+Export buttons (PDF/Excel). Filter bar (search, category, status dropdowns). Results table: ID, Material (thumbnail + category), Location, Urgency, Status, Action ("View Timeline").
+
+---
+
+## 4.7 Program Algorithms
+
+### 4.7.1 User Registration
+
+```
+ALGORITHM RegisterUser
+INPUT:  name, email, role, matricNumber, faculty, department, hostel
+OUTPUT: User record or error
+
+BEGIN
+    1. Validate email is not empty
+    2. IF email exists in users collection THEN
+        RETURN error "Email already registered"
+    3. Generate unique user ID ("u_" + random number)
+    4. Create user record with status="Active" and default avatar
+    5. Add to users collection (prepend)
+    6. Create welcome notification and activity log entry
+    7. Call commit() to save to disk
+    8. RETURN user record and token
+END
+```
+
+### 4.7.2 User Login
+
+```
+ALGORITHM LoginUser
+INPUT:  email, role
+OUTPUT: User record and token, or error
+
+BEGIN
+    1. Search users collection for matching email (case-insensitive)
+    2. IF user found THEN
+        IF status == "Suspended" THEN RETURN 403 error
+        RETURN user record and token
+    3. ELSE (not found)
+        Auto-create new user with provided email and role
+        Call commit() to save
+        RETURN new user record and token
+END
+```
+
+### 4.7.3 Waste Report Submission
+
+```
+ALGORITHM SubmitReport
+INPUT:  category, priority, location, description, imageUrl, studentId, studentName, aiClassification
+OUTPUT: New report record
+
+BEGIN
+    1. Generate unique report ID ("R-" + 4-digit number)
+    2. Set status="Pending", dateSubmitted=current ISO timestamp
+    3. Create report record with all fields and empty comments array
+    4. Add to reports collection (prepend)
+    5. Create notification: "[Category] Incident Reported"
+    6. Create activity log: "Filed [ID] ([Category]) at [building]"
+    7. Call commit() to save
+    8. RETURN report record
+END
+```
+
+### 4.7.4 Report Status Update
+
+```
+ALGORITHM UpdateReportStatus
+INPUT:  reportId, newStatus, completionImageUrl (optional)
+OUTPUT: Updated report record
+
+BEGIN
+    1. Find report by ID; if not found, RETURN 404 error
+    2. Update report.status = newStatus
+    3. IF completionImageUrl provided THEN set it on report
+    4. IF newStatus == "Completed" THEN
+        Create notification: "Cleanup Completed ([ID])" for student
+    5. Create activity log: "Marked [ID] as [newStatus]"
+    6. Call commit() to save
+    7. RETURN updated report
+END
+```
+
+### 4.7.5 Staff Assignment
+
+```
+ALGORITHM AssignStaff
+INPUT:  reportId, staffId, staffName, adminName
+OUTPUT: Updated report record
+
+BEGIN
+    1. Find report by ID; if not found, RETURN 404 error
+    2. Set assignedStaffId, assignedStaffName, status="Assigned"
+    3. Create notification: "Case [ID] allocated to [staffName]"
+    4. Create activity log: "Assigned [ID] to [staffName]"
+    5. Call commit() to save
+    6. RETURN updated report
+END
+```
+
+### 4.7.6 AI Waste Classification
+
+```
+ALGORITHM ClassifyWaste
+INPUT:  image (base64), description (text)
+OUTPUT: Classification result
+
+BEGIN
+    1. IF GEMINI_API_KEY is configured THEN
+        Send image + classification prompt to Gemini API
+        Parse and RETURN JSON result (category, confidence, tips)
+    2. ELSE (heuristic fallback)
+        Search description for keywords:
+            "bottle"/"plastic" → Plastic (0.92)
+            "glass"/"jar" → Glass (0.90)
+            "food"/"organic" → Organic (0.95)
+            "paper"/"cardboard" → Paper (0.91)
+            "metal"/"iron" → Metal (0.88)
+            "battery"/"electronic" → Electronic (0.94)
+            No match → Mixed Waste (0.85)
+        RETURN result with "Simulated" note
+END
+```
+
+### 4.7.7 User Status Management
+
+```
+ALGORITHM UpdateUserStatus
+INPUT:  userId, newStatus, adminName
+OUTPUT: Updated user record
+
+BEGIN
+    1. Find user by ID; if not found, RETURN 404 error
+    2. Set user.status = newStatus
+    3. Create activity log: "[Suspended/Activated] user [name]"
+    4. Call commit() to save
+    5. RETURN updated user record
+END
+```
+
+---
+
+## 4.8 Program Flowchart
+
+### 4.8.1 Overall System Flowchart
+
+```
+         ┌─────────────┐
+         │    START     │
+         └──────┬──────┘
+                │
+         ┌──────▼──────┐
+         │ User visits  │
+         │ system URL   │
+         └──────┬──────┘
+                │
+         ┌──────▼──────┐
+         │ Display      │
+         │ Landing Page │
+         └──────┬──────┘
+                │
+    ┌───────────▼───────────┐
+    │ User clicks Login or  │
+    │ Register              │
+    └───────────┬───────────┘
+          ┌─────┴─────┐
+          │           │
+   ┌──────▼──┐  ┌────▼─────┐
+   │  Login  │  │ Register │
+   │  Form   │  │  Form    │
+   └────┬────┘  └────┬─────┘
+        │             │
+   ┌────▼─────────────▼────┐
+   │ Submit credentials to  │
+   │ /api/auth/login        │
+   └──────────┬────────────┘
+              │
+       ┌──────▼──────┐
+       │  Account     │
+       │  suspended?  │
+       └──────┬──────┘
+         YES  │  NO
+         ┌────┘  └────┐
+    ┌────▼────┐  ┌────▼─────────┐
+    │ Block   │  │ Load User     │
+    │ Access  │  │ Dashboard     │
+    └─────────┘  │ (by role)     │
+                 └────┬─────────┘
                       │
-┌─────────────────────┼────────────────────────────┐
-│       Express.js Server (Port 3000)               │
-│  ┌────────────────────────────────────────────┐  │
-│  │  /api/auth     │ Login, Register, GetMe    │  │
-│  │  /api/reports  │ CRUD, Status, Assign,     │  │
-│  │                │ Comments, Delete           │  │
-│  │  /api/users    │ CRUD, Status, Role, Delete │  │
-│  │  /api/notifications │ List, MarkRead,       │  │
-│  │                      MarkAllRead            │  │
-│  │  /api/logs     │ Activity Log Entries       │  │
-│  │  /api/map      │ Bin & Truck Data           │  │
-│  │  /api/classify │ AI Waste Classification    │  │
-│  │  /api/health   │ Health Check               │  │
-│  └────────────────────────────────────────────┘  │
-│                      │                            │
-│  ┌────────────────────────────────────────────┐  │
-│  │          server/data.ts                     │  │
-│  │  getDb() ─ loads server/db.json            │  │
-│  │  commit() ─ writes server/db.json          │  │
-│  └────────────────────────────────────────────┘  │
-│                      │                            │
-│         ┌────────────┼────────────┐               │
-│         │ If GEMINI_API_KEY set:  │               │
-│         ▼                         │               │
-│  ┌──────────────────┐             │               │
-│  │ Google Gemini AI  │             │               │
-│  └──────────────────┘             │               │
-└───────────────────────────────────────────────────┘
+         ┌────────────┼────────────┐
+         │            │            │
+   ┌─────▼───┐ ┌─────▼───┐ ┌─────▼───┐
+   │Dashboard│ │ Report  │ │  Map/   │
+   │  View   │ │  Waste  │ │ History │
+   └─────────┘ └─────────┘ └─────────┘
 ```
 
-### 4.2.2 Data Flow
+**Figure 4.2: Overall System Flowchart**
 
-Data flows through the system as follows:
+### 4.8.2 Report Lifecycle Flowchart
 
-1. **User Interaction:** The user interacts with React components via clicks, form inputs, and navigation events.
-2. **Frontend API Call:** Component event handlers call functions defined in `src/api.ts`, which constructs and sends HTTP requests to the backend.
-3. **Backend Processing:** Express route handlers process the request, read from or write to the in-memory database via `getDb()` and `commit()`.
-4. **Data Persistence:** The `commit()` function serializes the updated in-memory database to `server/db.json` on disk.
-5. **Response:** The backend returns JSON data, which the frontend uses to update its React state and re-render the UI.
-6. **Notifications & Logs:** Most write operations (report creation, status changes, user management) automatically generate notification and activity log entries.
-
-### 4.2.3 REST API Endpoints
-
-The system exposes 22 API endpoints organized across six route modules, as shown in Table 4.2.
-
-**Table 4.2: REST API Endpoints**
-
-| Module | Method | Endpoint | Description |
-|--------|--------|----------|-------------|
-| Auth | POST | `/api/auth/login` | Authenticate or auto-create user |
-| Auth | POST | `/api/auth/register` | Register new student account |
-| Auth | GET | `/api/auth/me/:userId` | Get user profile by ID |
-| Reports | GET | `/api/reports` | List all reports (filterable) |
-| Reports | GET | `/api/reports/:id` | Get single report details |
-| Reports | POST | `/api/reports` | Create new waste report |
-| Reports | PUT | `/api/reports/:id/status` | Update report status |
-| Reports | PUT | `/api/reports/:id/assign` | Assign staff to report |
-| Reports | POST | `/api/reports/:id/comments` | Add comment to report |
-| Reports | DELETE | `/api/reports/:id` | Delete a report |
-| Users | GET | `/api/users` | List all users (filterable) |
-| Users | PUT | `/api/users/:id` | Update user profile |
-| Users | PUT | `/api/users/:id/status` | Suspend or activate user |
-| Users | PUT | `/api/users/:id/role` | Change user role |
-| Users | DELETE | `/api/users/:id` | Delete a user |
-| Notifications | GET | `/api/notifications` | List all notifications |
-| Notifications | PUT | `/api/notifications/read-all` | Mark all as read |
-| Notifications | PUT | `/api/notifications/:id/read` | Mark single as read |
-| Logs | GET | `/api/logs` | List all activity logs |
-| Map | GET | `/api/map/bins` | Get campus bin locations |
-| Map | GET | `/api/map/trucks` | Get collection truck locations |
-| Classify | POST | `/api/classify` | AI waste classification |
-
-### 4.2.4 Data Storage Schema
-
-The system uses four collections within `server/db.json`, as shown in Table 4.3.
-
-**Table 4.3: Data Collections**
-
-| Collection | Content | Purpose |
-|------------|---------|---------|
-| `users` | User[] | Registered user profiles with roles and status |
-| `reports` | WasteReport[] | Submitted waste reports with lifecycle data |
-| `notifications` | Notification[] | System notifications for all users |
-| `logs` | ActivityLog[] | Audit trail of all system actions |
-
-Each collection is an array of objects. The data module (`server/data.ts`) manages loading, reading, and writing these collections using Node.js filesystem operations:
-
-```typescript
-// server/data.ts — Core persistence module
-const DB_PATH = path.join(process.cwd(), 'server', 'db.json');
-
-function loadDb(): DbSchema {
-  if (fs.existsSync(DB_PATH)) {
-    const raw = fs.readFileSync(DB_PATH, 'utf-8');
-    return JSON.parse(raw);
-  }
-  return { users: [], reports: [], notifications: [], logs: [] };
-}
-
-function saveDb(data: DbSchema) {
-  fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
-}
-
-export function getDb(): DbSchema {
-  if (!db) db = loadDb();
-  return db;
-}
-
-export function commit() {
-  if (db) saveDb(db);
-}
+```
+         ┌──────────────┐
+         │    START      │
+         └──────┬───────┘
+                │
+         ┌──────▼──────┐
+         │  Student     │
+         │  submits     │
+         │  report      │
+         └──────┬──────┘
+                │
+         ┌──────▼──────┐
+         │  Status =    │
+         │  "Pending"   │
+         └──────┬──────┘
+                │
+         ┌──────▼──────┐
+         │  Admin       │
+         │  assigns     │
+         │  staff       │
+         └──────┬──────┘
+                │
+         ┌──────▼──────┐
+         │  Status =    │
+         │  "Assigned"  │
+         └──────┬──────┘
+                │
+         ┌──────▼──────┐
+         │  Staff       │
+         │  accepts     │
+         │  task        │
+         └──────┬──────┘
+                │
+         ┌──────▼──────┐
+         │  Status =    │
+         │  "In Progress"│
+         └──────┬──────┘
+                │
+         ┌──────▼──────┐
+         │  Staff        │
+         │  performs     │
+         │  cleanup      │
+         └──────┬──────┘
+                │
+         ┌──────▼──────┐
+         │  Staff clicks │
+         │  "Resolve"   │
+         │  + photo     │
+         └──────┬──────┘
+                │
+         ┌──────▼──────┐
+         │  Status =    │
+         │  "Completed" │
+         └──────┬──────┘
+                │
+         ┌──────▼──────┐
+         │  Student     │
+         │  notified    │
+         └──────┬──────┘
+                │
+         ┌──────▼──────┐
+         │     END      │
+         └─────────────┘
 ```
 
-### 4.2.5 TypeScript Type Definitions
-
-The system uses strongly-typed interfaces defined in `src/types/index.ts`, as shown in Table 4.4.
-
-**Table 4.4: Core TypeScript Interfaces**
-
-| Interface | Fields | Purpose |
-|-----------|--------|---------|
-| `User` | id, name, email, role, avatar, matricNumber, phoneNumber, faculty, department, hostel, status | User profile |
-| `WasteReport` | id, category, priority, location, description, imageUrl, status, dateSubmitted, assignedStaffId, comments, studentId, aiClassification | Waste report |
-| `Comment` | id, author, authorRole, content, timestamp | Report comment |
-| `Notification` | id, title, message, timestamp, read, type | System notification |
-| `ActivityLog` | id, action, user, role, timestamp, details | Audit log entry |
-
-Key enum types:
-- `UserRole`: `'student' | 'staff' | 'admin'`
-- `WasteCategory`: `'Plastic' | 'Glass' | 'Organic' | 'Paper' | 'Metal' | 'Electronic' | 'Mixed Waste'`
-- `ReportPriority`: `'Low' | 'Medium' | 'High' | 'Emergency'`
-- `ReportStatus`: `'Pending' | 'Assigned' | 'In Progress' | 'Completed'`
+**Figure 4.3: Report Lifecycle Flowchart**
 
 ---
 
-## 4.3 Implementation of Modules
+## 4.9 Hardware Requirement
 
-This section describes the implementation of each system module, including the technologies used, key features implemented, and relevant code snippets.
+### 4.9.1 Development Machine Requirements
 
-### 4.3.1 Landing Page Module
+**Table 4.11: Hardware Requirements for Development**
 
-**File:** `src/components/LandingPage.tsx`
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| Processor | Intel Core i3 (10th Gen) | Intel Core i5 (12th Gen) or higher |
+| RAM | 4 GB | 8 GB or higher |
+| Storage | 128 GB SSD | 256 GB SSD or higher |
+| Display | 1366 x 768 pixels | 1920 x 1080 (Full HD) |
+| Internet | Required for npm packages and deployment | Broadband (10 Mbps+) |
 
-The Landing Page serves as the public-facing marketing interface of the OCWMS. It was implemented as a single React component containing multiple visual sections.
+### 4.9.2 Deployment/Server Requirements
 
-**Features Implemented:**
+**Table 4.12: Hardware Requirements for Deployment**
 
-1. **Hero Carousel:** A full-screen, auto-rotating image carousel with six waste-management-themed slides sourced from Unsplash. The carousel implements fade transitions using CSS opacity animations, manual navigation via left/right arrow buttons, and pagination dots. The auto-advance interval is set to 3 seconds. Trust indicators displayed on each slide include: "GPS Tracking," "AI Classification," and "24/7 Monitoring."
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| Processor | 1 vCPU | 2 vCPU |
+| RAM | 512 MB | 1 GB |
+| Storage | 1 GB | 2 GB |
+| Network | 100 Mbps | 1 Gbps |
 
-2. **Features Section:** A four-card grid layout presenting the core waste management services: Garbage Collection Fleet, Smart Waste Bins, Recycling Stations, and Trained Personnel. Each card contains a background image, icon, title, and descriptive text.
+### 4.9.3 End-User Requirements
 
-3. **How It Works Section:** A four-step workflow visualization guiding users through the process: Report Waste, Assign Collection, Waste Collection, and Track Progress.
+**Table 4.13: Hardware Requirements for End Users**
 
-4. **Statistics Counters:** Four animated counters that increment from zero to their target values when scrolled into view. Implemented using a custom `useCountUp` hook with `IntersectionObserver` and `requestAnimationFrame` for smooth animation.
-
-5. **Demo Sandbox (Evaluator Access):** Three role-based quick-access cards that allow evaluators to instantly log in as a Student Resident, Sanitation Field Staff, or System Administrator. Clicking a card triggers the `api.login()` function, which sends a POST request to `/api/auth/login`.
-
-6. **Navigation Bar:** A fixed-position top bar with the UNICROSS shield SVG logo, navigation links, and authentication buttons. Includes a mobile-responsive hamburger menu.
-
-**Figure 4.2: Landing Page Workflow**
-
-```
-User visits URL → Landing Page loads
-    ↓
-User views Hero Carousel (6 slides, auto-rotating)
-    ↓
-User scrolls through: Features → How It Works → Dashboard Preview
-    ↓
-Stats Counters → Gallery → Testimonials → Demo Sandbox
-    ↓
-User clicks "Get Started" → Auth Screen OR clicks Demo card → API Login → Portal
-```
-
-### 4.3.2 Authentication Module
-
-**Files:** `src/components/AuthScreens.tsx`, `server/routes/auth.ts`
-
-The authentication module handles user login and registration through REST API endpoints.
-
-**Login Flow:**
-1. User enters their email address and clicks a role button (Student, Staff, or Admin) or the Quick Access shortcut.
-2. The frontend sends `POST /api/auth/login` with `{ email, role }`.
-3. The backend searches for the email in the users collection.
-4. If found and not suspended, returns the user profile and a mock JWT token.
-5. If not found, automatically creates a new user with the provided email and role.
-6. Suspended users receive a 403 error and are blocked from accessing the portal.
-
-**Registration Flow:**
-1. Student completes the registration form (Full Name, Matric Number, Email, Phone, Faculty, Department, Hostel, Password).
-2. The frontend sends `POST /api/auth/register` with the form data.
-3. The backend creates a new user with role `'student'`, generates a welcome notification and activity log entry.
-4. The user is automatically logged in and redirected to the Student Dashboard.
-
-**Code Snippet 4.1: Backend Login Handler**
-```typescript
-// server/routes/auth.ts
-router.post('/login', (req: Request, res: Response) => {
-  const { email, role } = req.body;
-  const db = getDb();
-  let user = db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
-  if (!user) {
-    // Auto-create user if email not found
-    user = {
-      id: 'u_' + Math.floor(Math.random() * 1000),
-      name: email.split('@')[0].split('.')
-        .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-      email, role, status: 'Active',
-    };
-    db.users.unshift(user);
-    commit();
-  }
-  if (user.status === 'Suspended') {
-    return res.status(403).json({ error: 'Account suspended' });
-  }
-  res.json({ user, token: 'mock_token_' + user.id });
-});
-```
-
-**Code Snippet 4.2: Frontend API Login Call**
-```typescript
-// src/api.ts
-login: (email: string, role: string) =>
-  request<any>('POST', '/api/auth/login', { email, role }),
-```
-
-### 4.3.3 Student Dashboard Module
-
-**File:** `src/components/UserDashboard.tsx`
-
-The Student Dashboard provides students with an overview of their waste reports and campus waste statistics.
-
-**Features Implemented:**
-
-1. **Greeting Banner:** A dark gradient banner displaying the student's name and a call-to-action button ("Report Waste Spot") that navigates to the report submission form.
-
-2. **KPI Cards:** Four metric cards displaying:
-   - Total Submissions (all reports by the student)
-   - Awaiting Staff (reports with "Pending" status)
-   - Active Cleanup (reports with "Assigned" or "In Progress" status)
-   - Resolved Issues (reports with "Completed" status)
-
-3. **Weekly Trend Chart:** A bar chart (using Recharts) showing the student's submission trend across the seven days of the week. The chart uses `ResponsiveContainer` for responsive sizing and displays data labels on each bar.
-
-4. **Category Distribution Chart:** A pie chart visualizing the distribution of waste categories in the student's reports. Each category is assigned a distinct color.
-
-5. **Recent Reports Table:** A table listing the student's recent reports with columns for Report ID, Incident Details (image thumbnail + category), Faculty Location, Priority Level (color-coded badge), Status Indicator, and an "Inspect Timeline" action button.
-
-**Code Snippet 4.3: Frontend Data Loading**
-```typescript
-// src/App.tsx — Reports loaded from backend API
-useEffect(() => {
-  const load = async () => {
-    try {
-      const data = await api.getReports();
-      setReports(data);
-    } catch (e) { console.error(e); }
-  };
-  load();
-}, []);
-```
-
-**Figure 4.3: Student Dashboard Data Flow**
-
-```
-Student logs in → App.tsx calls api.getReports()
-    ↓
-Backend returns all reports → Frontend filters by studentId
-    ↓
-KPIs calculated: total, pending, active, completed
-    ↓
-Chart data derived from filtered reports
-    ↓
-Recharts renders BarChart + PieChart
-    ↓
-Recent reports populated in table
-    ↓
-Student clicks "Inspect Timeline" → ReportDetails view
-```
-
-### 4.3.4 Staff Dashboard Module
-
-**File:** `src/components/StaffDashboard.tsx`
-
-The Staff Dashboard equips sanitation field staff with tools to manage their assigned waste collection tasks.
-
-**Features Implemented:**
-
-1. **KPI Cards:** Four cards showing:
-   - Assigned Tasks (total reports assigned to the staff member)
-   - Completed Resolutions (tasks marked as "Completed")
-   - Average Completion Time (displayed as 2.4 hours, simulated)
-   - Operational Tier (displayed as "Class A")
-
-2. **Incident Response Matrix:** A detailed table of all reports assigned to the staff member, showing:
-   - Report ID and waste category
-   - Location (faculty and building)
-   - Current status with color coding
-   - Action buttons based on current status:
-     - "Accept Task" button (calls `api.updateReportStatus(id, 'In Progress')`)
-     - "Resolve Task" button (opens a photo selection panel for completion evidence)
-     - "Timeline View" button (navigates to full report details)
-
-3. **Resolution Photo Picker:** A 2x2 grid of predefined images that staff can select as completion evidence. On confirm, calls `api.updateReportStatus(id, 'Completed', photoUrl)`.
-
-**Code Snippet 4.4: Staff Status Update via API**
-```typescript
-// Staff accepts task — calls API endpoint
-await api.updateReportStatus(reportId, 'In Progress');
-
-// Staff completes task — calls API endpoint with completion photo
-await api.updateReportStatus(reportId, 'Completed', selectedPhoto);
-```
-
-**Workflow:**
-```
-Staff logs in → Sees assigned tasks (from api.getReports())
-    ↓
-Clicks "Accept Task" → PUT /api/reports/:id/status → Status: "In Progress"
-    ↓
-Performs collection → Clicks "Resolve Task"
-    ↓
-Selects completion photo → PUT /api/reports/:id/status → Status: "Completed"
-    ↓
-Notification generated → Student notified
-```
-
-### 4.3.5 Admin Dashboard Module
-
-**File:** `src/components/AdminDashboard.tsx`
-
-The Admin Dashboard provides system administrators with comprehensive oversight capabilities through three sub-tabs.
-
-**Sub-tab 1: Sanitation Analytics**
-- Five KPI cards: Total Users, Field Crew (staff count), Total Reports, Total Resolutions (completed reports), Active Trucks (simulated)
-- Area chart showing monthly report trends (Reports vs Completed lines)
-- Pie chart displaying report status distribution
-- Bar chart of waste categories
-- Top waste locations by faculty with percentage bars
-- Recent campus filings preview
-
-**Sub-tab 2: User Directory**
-- Search bar for filtering users by name, email, or matric number
-- Role filter dropdown
-- User table with columns: Name, Contact (email/phone), Role (editable dropdown), Hostel/Department, Status (Active/Suspended/Pending), Actions
-- Administrative actions via API calls:
-  - `api.updateUserStatus(userId, status)` — Suspend/Activate
-  - `api.updateUserRole(userId, role)` — Change role
-  - `api.deleteUser(userId)` — Delete user
-
-**Sub-tab 3: Activity Log**
-- Chronological list of all system actions loaded from `GET /api/logs`
-- Each entry displays: action type (color-coded dot), user name, role, timestamp, and details
-- Different dot colors for different action types (red pulse for emergency, green for completed, blue for new reports)
-
-**Code Snippet 4.5: Admin User Management via API**
-```typescript
-// Admin suspends a user — calls API endpoint
-await api.updateUserStatus(userId, 'Suspended', currentUser.name);
-
-// Admin changes user role — calls API endpoint
-await api.updateUserRole(userId, 'staff', currentUser.name);
-
-// Admin deletes user — calls API endpoint
-await api.deleteUser(userId, currentUser.name);
-```
-
-### 4.3.6 Waste Reporting Module with AI Classification
-
-**Files:** `src/components/ReportForm.tsx`, `server.ts`, `src/api.ts`
-
-This module enables students to submit waste reports with optional AI-powered waste classification.
-
-**Report Form Features:**
-1. **Image Capture/Upload:** Users can upload an image via file input (supports camera capture on mobile devices). The image is converted to a base64 data URL for preview and transmission.
-
-2. **Sandbox Presets:** Four predefined waste image presets (Plastic Heap, Lab Broken Shards, Pruning Foliage, Damaged Batteries) for quick testing during demonstrations.
-
-3. **AI Classification:** Sends the image and description to `POST /api/classify` for analysis. Returns category, confidence, handling tips, and recycling potential.
-
-4. **Category Selector:** A dropdown populated from the `WASTE_CATEGORIES` constant (Plastic, Glass, Organic, Paper, Metal, Electronic, Mixed Waste).
-
-5. **Priority Selector:** Four buttons for urgency levels (Low, Medium, High, Emergency) with color-coded active states.
-
-6. **Location Selector:** Faculty dropdown (from `FACULTIES` constant), building text input, and simulated campus map with clickable landmark buttons that auto-set GPS coordinates.
-
-**AI Classification Implementation:**
-
-The classification endpoint is implemented in `server.ts` at `POST /api/classify`. It operates in two modes:
-
-**Mode 1 — Google Gemini AI (when API key is configured):**
-- Initializes the `GoogleGenAI` client with the configured API key
-- Sends the image (as inline data) and description to the Gemini model
-- Receives a structured JSON response with category, confidence, handling tip, recycle potential, and green tip
-- Returns the parsed JSON to the frontend
-
-**Mode 2 — Heuristic Fallback (when no API key):**
-- Performs keyword matching on the description text
-- Category detection examples:
-  - "bottle", "plastic", "nylon" → Plastic (confidence: 0.92)
-  - "glass", "jar" → Glass (confidence: 0.90)
-  - "food", "banana", "organic" → Organic (confidence: 0.95)
-  - "paper", "book", "cardboard" → Paper (confidence: 0.91)
-  - "metal", "aluminium" → Metal (confidence: 0.88)
-  - "electronic", "battery" → Electronic (confidence: 0.94)
-- Returns a simulated response with the matched category, confidence score, handling tips, and environmental facts
-
-**Code Snippet 4.6: Frontend Report Submission via API**
-```typescript
-// src/App.tsx — Report creation via backend API
-const handleReportSubmit = async (data: any) => {
-  const reportData = {
-    ...data,
-    studentId: currentUser.id,
-    studentName: currentUser.name
-  };
-  await api.createReport(reportData);
-  // Backend automatically creates notification + activity log
-};
-```
-
-**Code Snippet 4.7: Backend Report Creation**
-```typescript
-// server/routes/reports.ts
-router.post('/', (req: Request, res: Response) => {
-  const db = getDb();
-  const newReport: WasteReport = {
-    id: 'R-' + Math.floor(1000 + Math.random() * 9000),
-    status: 'Pending',
-    dateSubmitted: new Date().toISOString(),
-    comments: [],
-    ...req.body
-  };
-  db.reports.unshift(newReport);
-  // Auto-generate notification
-  db.notifications.unshift({
-    id: 'not_' + Math.floor(Math.random() * 1000),
-    title: `${newReport.category} Incident Reported`,
-    message: `Report ${newReport.id} registered at ${newReport.location?.faculty || 'Unknown'}.`,
-    timestamp: new Date().toISOString(),
-    read: false,
-    type: 'info'
-  });
-  // Auto-generate activity log
-  db.logs.unshift({
-    id: 'log_' + Math.floor(Math.random() * 1000),
-    action: 'New Report Filed',
-    user: newReport.studentName,
-    role: 'Student',
-    timestamp: new Date().toISOString(),
-    details: `Filed ${newReport.id} (${newReport.category}) at ${newReport.location?.building || 'Unknown'}.`
-  });
-  commit();
-  res.status(201).json(newReport);
-});
-```
-
-### 4.3.7 Live Fleet Map Module
-
-**File:** `src/components/MapSection.tsx`
-
-The Live Fleet Map module provides real-time visualization of waste bins and collection vehicles on an interactive campus map.
-
-**Features Implemented:**
-
-1. **Map Rendering:** Uses MapLibre GL JS with OpenStreetMap raster tiles. The map is centered on the UNICROSS campus at coordinates [8.351, 4.9755] with a zoom level of 15.
-
-2. **Dual-View Toggle:** Users can switch between "Waste Bins" view and "Collection Vehicles" view using toggle buttons. Each view manages layer visibility through MapLibre's `setLayoutProperty` method.
-
-3. **Bin Markers (10 bins):** Each bin is rendered as a circle marker on the map with color coding by category:
-   - Plastic → Green
-   - Organic → Brown
-   - Paper → Blue
-   - Glass → Purple
-   - Electronic → Red
-   - General/Mixed → Gray
-
-4. **Pulse Effect for Full Bins:** Bins with "full" status display a pulsing red ring animation implemented as a separate circle layer.
-
-5. **Vehicle Markers (3 trucks):** Collection vehicles are color-coded by operational status:
-   - En Route → Blue
-   - Collecting → Green
-   - Returning → Amber
-   - Idle → Gray
-
-6. **Click-to-Inspect Popups:** Clicking any marker displays an information panel with:
-   - For bins: Name, category, fill level (as a progress bar), and status
-   - For trucks: Name, driver name, and current operational status
-
-7. **Dynamic Legends:** Context-sensitive legends that change based on the active view.
-
-**Code Snippet 4.8: Backend Map Data Endpoint**
-```typescript
-// server/routes/map.ts
-const BINS = [
-  { id: 'bin1', name: 'Engineering Block A', location: [8.3512, 4.9754],
-    category: 'Plastic', fillLevel: 85, status: 'full' },
-  { id: 'bin2', name: 'Bio Sci Garden', location: [8.3520, 4.9760],
-    category: 'Organic', fillLevel: 45, status: 'active' },
-  // ... 8 more bins
-];
-
-router.get('/bins', (_req, res) => res.json(BINS));
-router.get('/trucks', (_req, res) => res.json(TRUCKS));
-```
-
-### 4.3.8 Notifications Module
-
-**File:** Inline in `src/App.tsx`, `server/routes/notifications.ts`
-
-The Notifications module provides real-time alerts to all users about system events.
-
-**Features Implemented:**
-
-1. **Automatic Notification Generation:** Notifications are automatically created by the backend when:
-   - A new report is submitted (info)
-   - A staff member is assigned to a report (info)
-   - A report is completed (success)
-   - A user registers (success)
-   - A user is suspended (warning)
-
-2. **Notification Display:** Each notification card shows:
-   - Color-coded dot (green = success, red = error, blue = info)
-   - Timestamp, title, and message
-   - "Unread" badge on new items
-   - Unread items have a highlighted border; read items are dimmed
-
-3. **Mark All as Read:** Calls `PUT /api/notifications/read-all` to mark all notifications as read.
-
-**Code Snippet 4.9: Backend Notification Auto-Generation**
-```typescript
-// Notifications auto-generated on report completion
-if (status === 'Completed' && db.reports[idx].studentId) {
-  db.notifications.unshift({
-    id: 'not_' + Math.floor(Math.random() * 1000),
-    title: `Cleanup Completed (${req.params.id})`,
-    message: `Your report at ${db.reports[idx].location?.faculty} is fully cleared.`,
-    timestamp: new Date().toISOString(),
-    read: false,
-    type: 'success'
-  });
-}
-```
-
-### 4.3.9 Activity Logs Module
-
-**File:** Inline in `src/App.tsx`, `server/routes/logs.ts`
-
-The Activity Logs module provides a complete audit trail of all system actions.
-
-**Features Implemented:**
-
-1. **Automatic Log Generation:** Every write operation creates a log entry with:
-   - Action type (e.g., "New Report Filed", "Status: Completed", "Task Assigned", "User Suspended")
-   - User name and role
-   - Timestamp
-   - Detailed description
-
-2. **Log Display:** Admin dashboard shows all logs in chronological order with color-coded indicators.
-
-### 4.3.10 Configuration (Settings) Module
-
-**File:** `src/components/SettingsScreen.tsx`
-
-The Settings module allows users to manage their profile and application preferences.
-
-**Sections Implemented:**
-
-1. **Profile Settings:**
-   - Avatar URL input with live preview of the profile picture
-   - Editable fields: Full Name, Email Address, Phone Number, Hostel (students only)
-   - Save button that calls `api.updateUser(id, data)` to persist changes to the backend
-
-2. **Notification Preferences:**
-   - Three toggle checkboxes: Email Alerts, SMS Dispatches, Critical App Banners
-   - Preferences are managed as local component state (not persisted)
-
-3. **Security Credentials:**
-   - Password change form with three fields: Current Password, New Password, Confirm Password
-   - Client-side validation ensuring new password matches confirmation
-
-### 4.3.11 Role-Based Theming
-
-**File:** `src/components/DashboardLayout.tsx`
-
-Each user role has a distinct visual theme applied to the sidebar and topbar:
-
-| Role | Sidebar Background | Active Nav Color | Topbar Badge |
-|------|-------------------|-----------------|--------------|
-| Student | Stone-900 (#1c1917) | Amber gradient | Amber badge |
-| Staff | Slate-900 (#0f172a) | Blue gradient | Blue badge |
-| Admin | Violet-950 (#2e1065) | Violet gradient | Violet badge |
-
-This visual differentiation ensures users can immediately identify which portal they are operating in, reducing confusion during multi-role demonstrations.
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| Device | Desktop, laptop, or smartphone | Desktop or laptop |
+| Display | 320 x 480 (mobile) | 1366 x 768 or higher |
+| Internet | 3G | 4G/WiFi |
+| Browser | Modern browser (Chrome, Firefox, Edge) | Google Chrome (latest) |
 
 ---
 
-## 4.4 System Testing
+## 4.10 Software Requirement
 
-System testing was conducted to verify that the OCWMS meets its functional requirements and performs correctly across all user roles. Testing was performed at three levels: API endpoint testing, integration testing, and user acceptance testing.
+### 4.10.1 Development Software
 
-### 4.4.1 API Endpoint Testing
+**Table 4.14: Software Requirements for Development**
 
-All 22 REST API endpoints were tested using automated HTTP requests to verify correct behavior. Table 4.5 summarizes the test results.
+| Software | Version | Purpose |
+|----------|---------|---------|
+| Node.js | 24.x+ | JavaScript runtime |
+| npm | 10.x+ | Package manager |
+| Visual Studio Code | Latest | Code editor |
+| Git | 2.x+ | Version control |
+| Google Chrome | Latest | Testing and debugging |
 
-**Table 4.5: API Endpoint Test Results**
+### 4.10.2 Runtime/Deployment Software
 
-| Test ID | Endpoint | Method | Test Case | Expected Result | Actual Result | Status |
-|---------|----------|--------|-----------|-----------------|---------------|--------|
-| AT-01 | /api/health | GET | Health check | Returns status "online" | `{"status":"online","campus":"UNICROSS OCWMS"}` | Passed |
-| AT-02 | /api/auth/register | POST | Register student | User created with role "student" | User object returned with generated ID | Passed |
-| AT-03 | /api/auth/register | POST | Register staff | User created with role "staff" | User object returned with generated ID | Passed |
-| AT-04 | /api/auth/register | POST | Register admin | User created with role "admin" | User object returned with generated ID | Passed |
-| AT-05 | /api/auth/login | POST | Login with existing email | Returns user profile and token | User + token returned | Passed |
-| AT-06 | /api/auth/login | POST | Login with new email | Auto-creates user and logs in | New user created + returned | Passed |
-| AT-07 | /api/auth/login | POST | Login as suspended user | Returns 403 Forbidden | Status 403, error message | Passed |
-| AT-08 | /api/auth/me/:id | GET | Get user profile | Returns user by ID | User object returned | Passed |
-| AT-09 | /api/reports | POST | Create waste report | Report created with status "Pending" | Report with generated ID returned | Passed |
-| AT-10 | /api/reports | POST | Create report with location | Notification includes faculty name | "registered at Engineering" (not undefined) | Passed |
-| AT-11 | /api/reports | GET | List all reports | Returns array of reports | Array with correct count returned | Passed |
-| AT-12 | /api/reports/:id | GET | Get single report | Returns report by ID | Report object returned | Passed |
-| AT-13 | /api/reports/:id/assign | PUT | Admin assigns staff | Status changes to "Assigned" | Status = "Assigned", staff linked | Passed |
-| AT-14 | /api/reports/:id/status | PUT | Staff accepts task | Status changes to "In Progress" | Status = "In Progress" | Passed |
-| AT-15 | /api/reports/:id/status | PUT | Staff completes task | Status changes to "Completed" | Status = "Completed" | Passed |
-| AT-16 | /api/reports/:id/comments | POST | Add comment | Comment saved with author data | Comment with ID and timestamp returned | Passed |
-| AT-17 | /api/reports/:id | DELETE | Delete report | Report removed from collection | `{"success": true}` | Passed |
-| AT-18 | /api/users | GET | List all users | Returns array of users | Array with correct count returned | Passed |
-| AT-19 | /api/users/:id/status | PUT | Suspend user | Status changes to "Suspended" | Status = "Suspended" | Passed |
-| AT-20 | /api/users/:id/status | PUT | Reactivate user | Status changes to "Active" | Status = "Active" | Passed |
-| AT-21 | /api/users/:id/role | PUT | Change user role | Role updated to new value | Role = "admin" | Passed |
-| AT-22 | /api/users/:id | PUT | Update profile | Profile fields updated | Updated user object returned | Passed |
-| AT-23 | /api/users/:id | DELETE | Delete user | User removed from collection | `{"success": true}` | Passed |
-| AT-24 | /api/notifications | GET | List notifications | Returns array of notifications | Array with generated entries | Passed |
-| AT-25 | /api/notifications/read-all | PUT | Mark all read | All notifications marked as read | `{"success": true}`, unread count = 0 | Passed |
-| AT-26 | /api/logs | GET | List activity logs | Returns array of log entries | Array with 8+ entries | Passed |
-| AT-27 | /api/classify | POST | Classify waste | Returns category, confidence, tips | Plastic, 0.92, handling tip | Passed |
-| AT-28 | /api/map/bins | GET | Get bin locations | Returns 10 campus bins | Array with 10 bin objects | Passed |
-| AT-29 | /api/map/trucks | GET | Get truck locations | Returns 3 collection trucks | Array with 3 truck objects | Passed |
+**Table 4.15: Software Requirements for Running the System**
 
-**Result: 29/29 API tests passed (100%).**
+| Software | Version | Purpose |
+|----------|---------|---------|
+| Node.js | 24.x+ | Server runtime |
+| npm | 10.x+ | Production dependency installation |
+| Docker | Latest (optional) | Containerised deployment |
+| Web Browser | Chrome, Firefox, Edge | Accessing the system |
 
-### 4.4.2 Integration Testing
+### 4.10.3 External Services
 
-Integration testing verified that the system components work together correctly across the full user lifecycle. The following integration scenarios were tested:
+**Table 4.16: External Service Dependencies**
 
-**Scenario 1: Complete Student Workflow**
-1. Student registers via `POST /api/auth/register` → Portal loads with Student Dashboard
-2. Student submits waste report via `POST /api/reports` → Report created with "Pending" status
-3. Student views My Submissions → New report appears (filtered by studentId)
-4. Student checks Notifications → New notification received
-5. Student views History → Report visible with correct filters
+| Service | Required? | Purpose | Cost |
+|---------|-----------|---------|------|
+| Google Gemini AI API | Optional | AI waste classification | Free tier |
+| OpenStreetMap Tiles | Yes (auto) | Map rendering | Free |
+| Unsplash Images | Yes (embedded) | Profile avatars | Free |
 
-**Scenario 2: Complete Staff Workflow**
-1. Staff logs in via `POST /api/auth/login` → Staff Dashboard loads with assigned tasks
-2. Staff clicks "Accept Task" → `PUT /api/reports/:id/status` → Status: "In Progress"
-3. Staff clicks "Resolve Task" → Photo picker appears
-4. Staff selects photo → `PUT /api/reports/:id/status` → Status: "Completed"
+### 4.10.4 Environment Configuration
 
-**Scenario 3: Complete Admin Workflow**
-1. Admin logs in → Admin Dashboard loads with analytics (data from `GET /api/reports`, `GET /api/users`)
-2. Admin assigns staff to report → `PUT /api/reports/:id/assign` → Staff notified
-3. Admin searches users → `GET /api/users?search=...` → Filtered results
-4. Admin changes user role → `PUT /api/users/:id/role` → Role updated
-5. Admin suspends user → `PUT /api/users/:id/status` → Status: "Suspended"
-6. Admin views Activity Log → `GET /api/logs` → All actions displayed
+The system uses a `.env` file for optional configuration:
 
-**Scenario 4: Cross-Role Interaction**
-1. Student submits waste report → Report appears in system via `POST /api/reports`
-2. Admin views report in analytics → Report visible in charts
-3. Admin assigns staff to report → Staff receives notification via `PUT /api/reports/:id/assign`
-4. Staff accepts and completes task → Status updates to "Completed" via `PUT /api/reports/:id/status`
-5. Student sees "Completed" status in dashboard
+```
+GEMINI_API_KEY=          # Optional: AI classification
+PORT=3000                # Optional: Server port
+```
 
-**Table 4.6: Integration Test Results**
+### 4.10.5 System Startup
 
-| Scenario | Steps | Expected Outcome | Actual Outcome | Status |
-|----------|-------|------------------|----------------|--------|
-| Student Workflow | 5 steps | Complete report lifecycle | All steps executed successfully | Passed |
-| Staff Workflow | 4 steps | Task acceptance to completion | All steps executed successfully | Passed |
-| Admin Workflow | 6 steps | Full administrative control | All steps executed successfully | Passed |
-| Cross-Role Interaction | 5 steps | End-to-end system operation | All roles interacted correctly | Passed |
+1. Install dependencies: `npm install`
+2. Start development server: `npm run dev`
+3. Open browser: `http://localhost:3000`
 
-### 4.4.3 User Acceptance Testing
-
-User acceptance testing (UAT) was conducted with sample users representing each role to validate that the system meets user expectations and requirements.
-
-**Table 4.7: User Acceptance Testing Results**
-
-| Test ID | User Role | Task | Ease of Use (1-5) | Issues Found | Status |
-|---------|-----------|------|-------------------|--------------|--------|
-| UAT-01 | Student | Register new account | 5 | None | Accepted |
-| UAT-02 | Student | Submit waste report with AI classification | 4 | Image upload delayed on slow connection | Accepted with note |
-| UAT-03 | Student | View report history and status | 5 | None | Accepted |
-| UAT-04 | Staff | View assigned tasks | 5 | None | Accepted |
-| UAT-05 | Staff | Update task status with photo evidence | 4 | None | Accepted |
-| UAT-06 | Admin | View analytics dashboard | 5 | None | Accepted |
-| UAT-07 | Admin | Manage user accounts (suspend/activate/delete) | 5 | None | Accepted |
-| UAT-08 | Admin | View activity logs | 5 | None | Accepted |
-| UAT-09 | All | View live fleet map with bins and trucks | 5 | None | Accepted |
-| UAT-10 | All | Receive and read notifications | 5 | None | Accepted |
-
-### 4.4.4 Cross-Browser Compatibility Testing
-
-The system was tested across different web browsers to ensure consistent rendering and functionality.
-
-**Table 4.8: Cross-Browser Compatibility Results**
-
-| Browser | Version | Rendering | Functionality | Issues |
-|---------|---------|-----------|---------------|--------|
-| Google Chrome | 125+ | Excellent | Full functionality | None |
-| Mozilla Firefox | 130+ | Excellent | Full functionality | None |
-| Microsoft Edge | 125+ | Excellent | Full functionality | None |
-| Opera | 110+ | Good | Full functionality | Minor CSS differences |
+For production:
+1. Build: `npm run build` (creates optimised `dist/` folder)
+2. Start: `npm start` (runs `node dist/server.cjs`)
 
 ---
 
-## 4.5 Results and Discussion
+## 4.11 Documentation
 
-### 4.5.1 System Performance
+### 4.11.1 Student User Guide
 
-The OCWMS was evaluated on key performance metrics relevant to its operation:
+| Step | Action | Description |
+|------|--------|-------------|
+| 1 | Register | Click "Get Started", fill personal details, select faculty |
+| 2 | Login | Enter email, click STUDENT Quick Access button |
+| 3 | View Dashboard | View statistics, charts, and recent reports |
+| 4 | Report Waste | Click "Report Waste", upload photo, click "Analyse", fill form, submit |
+| 5 | Track Reports | View "My Submissions" for status updates |
+| 6 | View Map | Click "Live Fleet Map" for bin/vehicle locations |
 
-1. **Page Load Time:** The single-page application loads within 2-3 seconds on initial visit (due to asset caching) and under 1 second on subsequent navigations due to React's virtual DOM and Vite's optimized build.
+### 4.11.2 Staff User Guide
 
-2. **API Response Time:** All REST API endpoints respond in under 50ms on local hardware. The heuristic classification endpoint responds in under 50ms, while the Gemini AI endpoint responds in 2-5 seconds depending on network conditions and image size.
+| Step | Action | Description |
+|------|--------|-------------|
+| 1 | Login | Enter email, click STAFF Quick Access button |
+| 2 | View Tasks | View assigned reports in task table |
+| 3 | Accept Task | Click "Accept Task" to begin work |
+| 4 | Resolve Task | Click "Resolve Task", select completion photo, submit |
 
-3. **Data Persistence:** The JSON file persistence system (`server/db.json`) writes changes to disk in under 10ms. Data survives server restarts without loss. All 29 API endpoints tested showed correct data integrity.
+### 4.11.3 Administrator User Guide
 
-4. **Production Build:** The Vite + esbuild production build completes in approximately 42 seconds, producing a 19.2 KB server bundle (`dist/server.cjs`) and a 1.8 MB frontend bundle (506 KB gzipped).
+| Step | Action | Description |
+|------|--------|-------------|
+| 1 | Login | Enter email, click ADMIN Quick Access button |
+| 2 | View Analytics | Review KPI cards, charts, and trends |
+| 3 | Assign Staff | Click report, select staff from dropdown, dispatch |
+| 4 | Manage Users | Search, suspend, activate, change roles, delete |
+| 5 | View Logs | Review all system activities in audit trail |
 
-5. **Map Rendering:** MapLibre GL loads tiles efficiently, with the map becoming interactive within 2 seconds of page load. Layer toggling between bins and vehicles occurs in under 100ms.
+### 4.11.4 Quick Access Profiles (Demo Mode)
 
-### 4.5.2 Discussion of Findings
+For demonstration purposes, three pre-configured profiles allow instant login:
 
-The implementation of the OCWMS demonstrates that a functional campus waste management system can be built using modern JavaScript technologies with a lightweight server-side persistence layer. The key findings from the implementation include:
+**Table 4.17: Quick Access Profiles**
 
-1. **RESTful API Architecture:** The system exposes 22 well-structured REST endpoints across 6 route modules, following standard HTTP methods and status codes. This architecture enables clear separation of concerns between frontend presentation and backend data management.
+| Profile | Role | Email | Access Level |
+|---------|------|-------|-------------|
+| Student Resident | Student | brightokon444@gmail.com | Submit reports, view submissions, view map |
+| Sanitation Field Staff | Staff | emeka.obi@unicross.edu.ng | View/accept/resolve assigned tasks |
+| System Administrator | Admin | florence.effiong@unicross.edu.ng | Full system access, user management, analytics |
 
-2. **JSON File Persistence:** Using a JSON file as the persistence layer proved effective for this prototype. The `getDb()`/`commit()` abstraction pattern provides a clean interface that could be swapped for a database driver with minimal code changes. Data integrity was maintained across all 29 API tests.
+### 4.11.5 System Administrator Guide
 
-3. **Automatic Notification & Logging:** Every write operation (report creation, status changes, user management) automatically generates corresponding notification and activity log entries, ensuring a complete audit trail without requiring separate logging logic in each component.
+**Server Deployment:**
 
-4. **AI Integration Flexibility:** The dual-mode classification system (Gemini API + heuristic fallback) ensures the system remains functional even without an API key, while allowing enhanced functionality when the key is configured.
+1. Clone repository: `git clone https://github.com/RealBright1989/UOWMS.git`
+2. Install dependencies: `npm install`
+3. (Optional) Configure `.env` with `GEMINI_API_KEY`
+4. Build: `npm run build`
+5. Start: `npm start`
+6. Access: `http://localhost:3000`
 
-5. **MapLibre Viability:** MapLibre GL JS with OpenStreetMap tiles provides a fully functional, free alternative to proprietary mapping solutions like Google Maps, with no API key requirements.
+**Docker Deployment:**
 
-6. **Single-Server Architecture:** Deploying the Express server to simultaneously handle API requests, serve the React frontend, and manage data persistence simplifies deployment by requiring only one process and one port.
+1. Build image: `docker build -t ocwms .`
+2. Run: `docker run -p 3000:3000 ocwms`
 
-7. **Role-Based Theming:** The distinct color themes for each role (amber for students, blue for staff, violet for admin) proved effective in preventing confusion during multi-role demonstrations.
+**Data Backup:**
+- Database file: `server/db.json`
+- Backup: copy the file
+- Restore: replace file and restart server
 
-### 4.5.3 Comparison with Existing Systems
+### 4.11.6 Project Structure
 
-**Table 4.9: Comparison with Similar Systems**
-
-| Feature | OCWMS | Traditional Paper-Based System | Commercial WM Software |
-|---------|-------|-------------------------------|----------------------|
-| Reporting Speed | Real-time via REST API | 1-3 days | Real-time |
-| Data Persistence | Server-side JSON file | Physical records only | Database server |
-| AI Classification | Integrated (Gemini + fallback) | Not available | Usually premium add-on |
-| Cost | Free (open-source stack) | Printing/stationery costs | N500,000+ annually |
-| User Roles | 3 (Student, Staff, Admin) | 1 (Administrator) | 2-5 roles typically |
-| Map Integration | Free (OSM + MapLibre) | Not available | Usually proprietary |
-| Audit Trail | Automatic activity logging | Manual record-keeping | Varies |
-| Deployment | Docker container, single port | N/A | Complex setup |
-
----
-
-## 4.6 Challenges Encountered
-
-The following challenges were encountered during the implementation phase:
-
-### 4.6.1 MapLibre Worker Configuration
-
-**Challenge:** MapLibre GL JS version 5.x requires a dedicated web worker file (`maplibre-gl-csp-worker.js`) to function correctly. When bundled with Vite, the worker file was not being resolved properly, causing the map to fail to render.
-
-**Solution:** The worker URL was explicitly configured in the component using Vite's `?url` import suffix:
-```typescript
-// @ts-ignore – Vite provides the ?url import at build time
-import maplibreglWorkerUrl from 'maplibre-gl/dist/maplibre-gl-csp-worker.js?url';
-maplibregl.setWorkerUrl(maplibreglWorkerUrl);
 ```
-A TypeScript ignore comment was added to suppress the missing module declaration error, as Vite resolves the URL at build time.
-
-### 4.6.2 TypeScript Type Mismatches
-
-**Challenge:** The Express.js `app.listen()` method expects a `number` for the port parameter, but `process.env.PORT` returns `string | undefined`. Additionally, MapLibre's `Style` type definition did not match the OpenStreetMap raster tile configuration.
-
-**Solution:** The port was cast using `Number(PORT)` to satisfy the type checker. The MapLibre style object was typed as `any` to bypass strict type checking on the style specification, since the raster tile configuration is valid at runtime despite not matching the MapLibre TypeScript definitions.
-
-### 4.6.3 Notification Location Fields
-
-**Challenge:** When creating reports, the notification messages referenced `location.faculty` which could be undefined if the frontend sent data with different field names (e.g., `address` instead of `faculty`).
-
-**Solution:** Optional chaining with fallback values was used throughout the notification and logging code:
-```typescript
-message: `Report ${newReport.id} registered at ${newReport.location?.faculty || newReport.location?.building || 'Unknown Location'}.`
+UOWMS/
+├── src/                    # Frontend source code
+│   ├── api.ts             # REST API client
+│   ├── App.tsx            # Root component
+│   ├── components/        # React components
+│   └── types/index.ts     # TypeScript definitions
+├── server/                 # Backend source code
+│   ├── data.ts            # Database access module
+│   ├── db.json            # Persistent data store
+│   └── routes/            # API route handlers
+├── server.ts               # Express server entry point
+├── Dockerfile              # Docker configuration
+└── package.json            # Dependencies and scripts
 ```
 
-### 4.6.4 AI API Key Management
+### 4.11.7 Available Scripts
 
-**Challenge:** The Google Gemini API key required secure handling. Users who tested the system without configuring the `.env` file would encounter API errors.
-
-**Solution:** A dual-mode system was implemented with a heuristic fallback classifier. The `getGeminiClient()` function checks for the presence and validity of the API key before initializing the AI client. If the key is missing, invalid, or in placeholder state, the system transparently falls back to keyword-based classification.
-
-### 4.6.5 Mobile Responsiveness
-
-**Challenge:** The map component and data tables required careful styling to render correctly on mobile devices.
-
-**Solution:** Tailwind CSS responsive prefixes (`sm:`, `md:`, `lg:`) were used throughout. The sidebar converts to a slide-out drawer on mobile, and tables implement horizontal scrolling on small screens.
-
-### 4.6.6 Containerization for Deployment
-
-**Challenge:** Deploying the full-stack application (React frontend + Express backend + Node.js runtime) to cloud hosting platforms required a standardized build process.
-
-**Solution:** A multi-stage Dockerfile was created:
-```dockerfile
-FROM node:20-alpine AS build
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-FROM node:20-alpine
-WORKDIR /app
-ENV NODE_ENV=production
-COPY --from=build /app/package*.json ./
-RUN npm ci --omit=dev
-COPY --from=build /app/dist ./dist
-EXPOSE 3000
-CMD ["node", "dist/server.cjs"]
-```
-This ensures the frontend is built and bundled during the Docker build phase, while only production dependencies are installed in the final image, reducing the image size.
-
----
-
-## 4.7 Summary
-
-Chapter 4 presented the implementation and testing of the Online Campus Waste Management System (OCWMS). The system was implemented using React 19 with TypeScript for the frontend and Express.js for the backend, employing modern tools such as Vite, Tailwind CSS, MapLibre GL JS, and Recharts.
-
-The backend exposes 22 RESTful API endpoints organized across 6 route modules (Authentication, Reports, Users, Notifications, Logs, and Map), with data persisted in a server-side JSON file via the `server/data.ts` module. This architecture provides clean separation of concerns while maintaining simplicity.
-
-Eleven major modules were implemented: the Landing Page, Authentication System, Student Dashboard, Staff Dashboard, Admin Dashboard, Waste Reporting with AI Classification, Live Fleet Map, Notifications, Activity Logs, Configuration, and Role-Based Theming. Each module was described in detail, including the features implemented and the technical approach used.
-
-Testing was conducted at three levels: API endpoint testing (29 test cases, all passed), integration testing (4 scenarios covering the complete student, staff, admin, and cross-role workflows, all passed), and user acceptance testing (10 tasks, all accepted). Cross-browser compatibility was verified across four major browsers.
-
-The key findings confirmed that the system provides an efficient waste management solution with real-time reporting, AI-powered classification, interactive mapping, role-based access control, automatic notification generation, and a complete activity audit trail, all achieved using free and open-source technologies.
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Development server with hot reload |
+| `npm run build` | Production build |
+| `npm start` | Production server |
+| `npm run lint` | TypeScript type checking |

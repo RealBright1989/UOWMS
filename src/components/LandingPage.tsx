@@ -450,15 +450,15 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister, o
                 EVALUATOR SANDBOX
               </div>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
-                Inspect Every Module Instantly!
+                Three Secured Portals, One System
               </h2>
               <p className="text-base text-slate-300 max-w-lg leading-relaxed">
-                Skip standard registration templates by bypassing login directly. Select any predefined UNICROSS system profile below to launch and explore their personalized dashboard controls.
+                Each role signs in through its own dedicated entry point. Choose a portal below to reach the login screen for that role only.
               </p>
               <div className="bg-slate-800/80 backdrop-blur-md rounded-2xl p-5 border border-slate-700 space-y-4">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Shared Database Synchronicity</p>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Actions taken in any dashboard profile update the central system immediately! You can submit a waste incident as a student, inspect and edit it as an Admin, or clear it as Sanitation Staff.
+                  Roles are separated at login, but they share one PostgreSQL database. File an incident as a student, dispatch an officer as Admin, and clear it as Sanitation Staff — every action is recorded centrally.
                 </p>
               </div>
             </div>
@@ -497,7 +497,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister, o
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm font-bold text-white group-hover:text-emerald-300 transition-colors">{item.title}</span>
-                      <span className="px-2 py-0.5 text-[10px] font-bold uppercase bg-emerald-500/15 text-emerald-400 rounded-full">Quick Access</span>
+                      <span className="px-2 py-0.5 text-[10px] font-bold uppercase bg-emerald-500/15 text-emerald-400 rounded-full">{item.title === 'Student Resident' ? 'Student Portal' : item.title === 'Sanitation Field Staff' ? 'Staff Portal' : 'Admin Console'}</span>
                     </div>
                     <p className="text-xs text-slate-400 leading-relaxed mb-2">{item.desc}</p>
                     <div className="flex flex-wrap gap-x-4 gap-y-1">

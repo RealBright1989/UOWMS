@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   ClipboardList, CheckCircle, Award, MapPin, 
-  Clock, Check 
+  Clock, Camera, Check 
 } from 'lucide-react';
 import { WasteReport, User } from '../types';
 
@@ -11,14 +11,6 @@ interface StaffDashboardProps {
   onUpdateStatus: (reportId: string, status: WasteReport['status'], resolutionImage?: string) => void;
   onSelectReport: (report: WasteReport) => void;
 }
-
-// Predefined mock cleanup completion images
-const RESOLUTION_PHOTOS = [
-  'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=400&q=80', // clean bins
-  'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=400&q=80', // clean walkways
-  'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=400&q=80', // trash bag stack
-  'https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=400&q=80'  // tidy building
-];
 
 export default function StaffDashboard({ 
   reports, 
@@ -36,12 +28,26 @@ export default function StaffDashboard({
   const completedTasks = assignedReports.filter(r => r.status === 'Completed').length;
 
   const [activeCompletingId, setActiveCompletingId] = useState<string | null>(null);
-  const [selectedResPhoto, setSelectedResPhoto] = useState(RESOLUTION_PHOTOS[0]);
+  const [selectedResPhoto, setSelectedResPhoto] = useState<string | null>(null);
+
+  // Real on-the-spot photo from device camera or gallery, encoded to base64
+  const handleResPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setSelectedResPhoto(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
 
   const triggerCompletionSubmit = (reportId: string) => {
+    if (!selectedResPhoto) return;
     // Call main app closure to mark completed
     onUpdateStatus(reportId, 'Completed', selectedResPhoto);
     setActiveCompletingId(null);
+    setSelectedResPhoto(null);
   };
 
   return (
@@ -226,30 +232,41 @@ export default function StaffDashboard({
                           <td colSpan={6} className="bg-slate-50 p-6 rounded-2xl border border-slate-100 text-left">
                             <div className="max-w-xl space-y-4">
                               <div>
-                                <h4 className="text-xs font-bold text-slate-800">Submit Cleanup Resolution Evidence</h4>
-                                <p className="text-[10px] text-slate-500 mt-0.5">Pick one of our on-site verification presets to mock-upload the resolved clean space state.</p>
+                                <h4 className="text-xs font-bold text-slate-800">Submit Live Cleanup Resolution Evidence</h4>
+                                <p className="text-[10px] text-slate-500 mt-0.5">Capture the cleaned space now with your device camera, or upload a real photo from your gallery.</p>
                               </div>
 
-                              <div className="grid grid-cols-4 gap-3">
-                                {RESOLUTION_PHOTOS.map((pho, idx) => (
-                                  <button
-                                    key={idx}
-                                    type="button"
-                                    id={`res-photo-btn-${idx}`}
-                                    onClick={() => setSelectedResPhoto(pho)}
-                                    className={`
-                                      relative rounded-xl overflow-hidden aspect-square border-2 transition
-                                      ${selectedResPhoto === pho ? 'border-green-600 scale-102 ring-2 ring-green-150' : 'border-transparent hover:border-slate-350'}
-                                    `}
-                                  >
-                                    <img src={pho} alt="resol asset" className="w-full h-full object-cover" />
-                                    {selectedResPhoto === pho && (
+                              <div className="flex items-center gap-4 flex-wrap">
+                                <label
+                                  htmlFor="res-photo-upload"
+                                  id="res-photo-upload-label"
+                                  className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl cursor-pointer transition"
+                                >
+                                  <Camera className="h-4 w-4" />
+                                  {selectedResPhoto ? 'Retake / Change Photo' : 'Take or Upload Photo'}
+                                </label>
+                                <input
+                                  id="res-photo-upload"
+                                  type="file"
+                                  accept="image/*"
+                                  capture="environment"
+                                  onChange={handleResPhotoUpload}
+                                  className="hidden"
+                                />
+
+                                {selectedResPhoto && (
+                                  <div className="flex items-center gap-2">
+                                    <div className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-green-600 shrink-0">
+                                      <img src={selectedResPhoto} alt="resolution evidence" className="w-full h-full object-cover" />
                                       <span className="absolute bottom-1 right-1 bg-green-600 text-white p-0.5 rounded-full">
                                         <Check className="h-3 w-3" />
                                       </span>
-                                    )}
-                                  </button>
-                                ))}
+                                    </div>
+                                    <span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-100 px-2 py-1 rounded-lg uppercase tracking-wider">
+                                      Live Evidence Attached
+                                    </span>
+                                  </div>
+                                )}
                               </div>
 
                               <div className="flex gap-3 justify-end pt-2">
@@ -262,8 +279,9 @@ export default function StaffDashboard({
                                 </button>
                                 <button
                                   id="confirm-completion-btn"
+                                  disabled={!selectedResPhoto}
                                   onClick={() => triggerCompletionSubmit(rep.id)}
-                                  className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-xl shadow-lg transition"
+                                  className="px-5 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl shadow-lg transition"
                                 >
                                   Dispatch Cleanup Completion Report
                                 </button>
